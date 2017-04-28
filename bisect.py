@@ -15,9 +15,9 @@ def Bisect(fnc, x1, x2, tol = 0.001, iter_limit = 50):
             variable
         x1 (float): first guess
         x2 (float): second guess
-        tol (Optional[float]): solution tolerance to analytically correct
+        tol (float, optional): solution tolerance to analytically correct
             answer. Defaults to 0.001
-        iter_limit (Optional[int]): maximum number of iterations to perform if the
+        iter_limit (int, optional): maximum number of iterations to perform if the
             solution is not coverging. Defaults to 50.
 
     Returns:
