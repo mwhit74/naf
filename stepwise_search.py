@@ -17,9 +17,9 @@ def stepwise_search(fnc, x1, x2, tol = 0.001, incr = 10):
         variable
         x1 (float): first guess
         x2 (float): second guess
-        tol (Optional[float]): solution tolerance to analytically correct answer. Defaults
+        tol (float, optional): solution tolerance to analytically correct answer. Defaults
         to 0.001
-        incr (Optional[int]): number of steps to create in the interval. This value is
+        incr (int, optional): number of steps to create in the interval. This value is
         also the scaler multiplier to increase the number of steps for each
         iteration. For example incr=10, so there will be 10 equal steps in the
         initial iteration and 10*10=100 equal steps in the second interation.
