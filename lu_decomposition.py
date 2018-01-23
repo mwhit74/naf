@@ -35,12 +35,27 @@ for j in xrange(n):
             A[ov[i],k] = A[ov[i],k] - A[ov[i],j]*A[ov[j],k]
         b[ov[i]] = b[ov[i]] - a[ov[i],j]*b[ov[j]] #performs rhs calc
 
-def back_sub():
-#back substitution
-x[ov[n]] = b[ov[n]]/a[ov[n],n] # last row solution
-for j in xrange(n-1,1,-1):
-    x[ov[j]] = b[ov[j]]
-    for k in xrange(n,j+1,-1):
-        x[ov[j]] = x[ov[j]] - x[ov[k]]*a[ov[j],k]
-    x[ov[j]] = x[ov[j]]/a[ov[j],j]
+    return A, b, ov #where A is now L in the lower and U in the upper
 
+def back_sub(A, b):
+#back substitution
+x[ov[n]] = b[ov[n]]/A[ov[n],n] # last row solution
+for j in xrange(n-1,1,-1):
+    x[ov[j]] = b[ov[j]] #initialize solution value
+    for k in xrange(n,j+1,-1):
+        #group known terms in numerator
+        x[ov[j]] = x[ov[j]] - x[ov[k]]*A[ov[j],k] 
+    x[ov[j]] = x[ov[j]]/A[ov[j],j] #solving equation by division
+
+    return x
+
+def multiple_rhs():
+    #function to handle multiplication of the LU matricies, order vector and
+    #back substitution after the LU decomposition has been done the first time.
+
+    #one may want to incorporate this into the typical flow of this program
+    #i.e. have one fuction to calc the LU decomposition, one function to apply
+    #the LU decomposition to the rhs, and one function to complete the back
+    #substituation to solve the equations; not sure if this will be slow than
+    #having a seperate function for additional rhs as currently shown
+    pass
