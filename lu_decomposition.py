@@ -33,11 +33,11 @@ for j in xrange(n):
     for i in xrange(j+1,n): #steps across columns
         for k in xrange(j+1,n): #steps down rows in each column
             A[ov[i],k] = A[ov[i],k] - A[ov[i],j]*A[ov[j],k]
-        b[ov[i]] = b[ov[i]] - a[ov[i],j]*b[ov[j]] #performs rhs calc
+        b[ov[i]] = b[ov[i]] - A[ov[i],j]*b[ov[j]] #performs rhs calc
 
     return A, b, ov #where A is now L in the lower and U in the upper
 
-def back_sub(A, b):
+def back_sub(A, b, ov):
 #back substitution
 x[ov[n]] = b[ov[n]]/A[ov[n],n] # last row solution
 for j in xrange(n-1,1,-1):
@@ -49,13 +49,27 @@ for j in xrange(n-1,1,-1):
 
     return x
 
-def multiple_rhs():
-    #function to handle multiplication of the LU matricies, order vector and
-    #back substitution after the LU decomposition has been done the first time.
+#def rhs(A, b, ov):
+#    #one may want to incorporate this into the typical flow of this program
+#    #i.e. have one fuction to calc the LU decomposition, one function to apply
+#    #the LU decomposition to the rhs, and one function to complete the back
+#    #substituation to solve the equations; not sure if this will be slow than
+#    #having a seperate function for additional rhs as currently shown
+#    n,m = A.shape
+#    for j in xrange(n):
+#        for i in xrange(j+1,n):
+#            b[ov[i]] = b[ov[i]] = A[ov[i],j]*b[ov[j]]
+#
+#    return b
+#
+#def lu_solver(A, b):
+#    A, ov = lu_decomp(A)
+#    b = rhs(A, b, ov)
+#    x = back_sub(A, b, ov)
 
-    #one may want to incorporate this into the typical flow of this program
-    #i.e. have one fuction to calc the LU decomposition, one function to apply
-    #the LU decomposition to the rhs, and one function to complete the back
-    #substituation to solve the equations; not sure if this will be slow than
-    #having a seperate function for additional rhs as currently shown
-    pass
+if __name__ == "__main__":
+    A = np.array([0,2,0,1],[2,2,3,2],[4,3,0,1],[6,1,-6,-5])
+    b = np.array([0],[2],[7],[6])
+    A,b,ov = lu_decomp(A, b)
+    x = back_sub(A, b, ov)
+    
