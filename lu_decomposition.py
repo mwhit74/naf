@@ -3,22 +3,25 @@ import pdb
 
 def lu_decomp(A, b):
     n,m = A.shape
+    #n minus one, shape returns the number of elements; not good for
+    #indexing
+    nmo = n - 1
     ov = np.arange(n) #order_vector
     
     if n != m:
         raise ValueError("Matrix is not sqaure.")
     
     #row reduction
-    #pdb.set_trace()
-    for j in xrange(n):
+    for j in xrange(nmo):
         pvt = abs(A[ov[j],j]) #gets current pvt on diagonal
         org_pvt_row = j #keeps track of row location of pvt
     
         #cycle thru entries in first column
         #find largest value
+        #aka finding the max pivot
         for i in xrange(j+1,n):
             if abs(A[ov[i],j]) > pvt:
-                pvt = abs(A[i,j])
+                pvt = abs(A[ov[i],j])
                 new_pvt_row = i
     
         #switch largest value to be pivot
@@ -32,26 +35,28 @@ def lu_decomp(A, b):
             A[ov[i],j] = A[ov[i],j]/A[ov[j],j]
     
         #creates zeros below the main diagonal
-        for i in xrange(j+1,n): #steps across columns
-            for k in xrange(j+1,n): #steps down rows in each column
+        for i in xrange(j+1,n): #row number
+            for k in xrange(j+1,n): #column number
                 A[ov[i],k] = A[ov[i],k] - A[ov[i],j]*A[ov[j],k]
             b[ov[i]] = b[ov[i]] - A[ov[i],j]*b[ov[j]] #performs rhs calc
     
-        return A, b, ov #where A is now L in the lower and U in the upper
+    return A, b, ov #where A is now L in the lower and U in the upper
 
 def back_sub(A, b, ov):
+    pdb.set_trace()
     n,m = A.shape
+    nmo = n - 1
     x = np.empty((n,1),dtype='float')   
     #back substitution
-    x[ov[n-1]] = b[ov[n-1]]/A[ov[n-1],n-1] # last row solution
-    for j in xrange(n-1,1,-1):
+    x[ov[nmo]] = b[ov[nmo]]/A[ov[nmo],nmo] # last row solution
+    for j in xrange(nmo,0,-1):
         x[ov[j]] = b[ov[j]] #initialize solution value
-        for k in xrange(n,j+1,-1):
+        for k in xrange(nmo,j+1,-1):
             #group known terms in numerator
             x[ov[j]] = x[ov[j]] - x[ov[k]]*A[ov[j],k] 
         x[ov[j]] = x[ov[j]]/A[ov[j],j] #solving equation by division
     
-        return x
+    return x
 
 #def rhs(A, b, ov):
 #    #one may want to incorporate this into the typical flow of this program
@@ -75,12 +80,14 @@ def back_sub(A, b, ov):
 if __name__ == "__main__":
     A = np.array([[0.0,2.0,0.0,1.0],
                   [2.0,2.0,3.0,2.0],
-                  [4.0,3.0,0.0,1.0],
+                  [4.0,-3.0,0.0,1.0],
                   [6.0,1.0,-6.0,-5.0]])
+    print A
     b = np.array([[0.0],
-                  [2.0],
-                  [7.0],
+                  [-2.0],
+                  [-7.0],
                   [6.0]])
+    print b
     A,b,ov = lu_decomp(A, b)
     x = back_sub(A, b, ov)
     print A
