@@ -43,15 +43,14 @@ def lu_decomp(A, b):
     return A, b, ov #where A is now L in the lower and U in the upper
 
 def back_sub(A, b, ov):
-    pdb.set_trace()
     n,m = A.shape
     nmo = n - 1
     x = np.empty((n,1),dtype='float')   
     #back substitution
     x[ov[nmo]] = b[ov[nmo]]/A[ov[nmo],nmo] # last row solution
-    for j in xrange(nmo,0,-1):
+    for j in xrange(nmo-1,-1,-1):
         x[ov[j]] = b[ov[j]] #initialize solution value
-        for k in xrange(nmo,j+1,-1):
+        for k in xrange(nmo,j,-1):
             #group known terms in numerator
             x[ov[j]] = x[ov[j]] - x[ov[k]]*A[ov[j],k] 
         x[ov[j]] = x[ov[j]]/A[ov[j],j] #solving equation by division
@@ -65,9 +64,10 @@ def back_sub(A, b, ov):
 #    #substituation to solve the equations; not sure if this will be slow than
 #    #having a seperate function for additional rhs as currently shown
 #    n,m = A.shape
-#    for j in xrange(n):
+#    nmo = n - 1
+#    for j in xrange(nmo):
 #        for i in xrange(j+1,n):
-#            b[ov[i]] = b[ov[i]] = A[ov[i],j]*b[ov[j]]
+#            b[ov[i]] = b[ov[i]] - A[ov[i],j]*b[ov[j]]
 #
 #    return b
 #def forward_sub():
