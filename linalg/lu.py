@@ -67,7 +67,7 @@ def lu_decomp(A):
     return A, ov #where A is now L in the lower and U in the upper
 
 
-def for_elim(LU, b, ov):
+def for_elim(LU, ov, b):
     """Forward elmination applied to the b vector.
 
     Applies the operations recorded in the decomposition, the L lower triangular
@@ -101,7 +101,7 @@ def for_elim(LU, b, ov):
     return b
 
 
-def back_sub(LU, b, ov):
+def back_sub(LU, ov, b):
     """
     Back substituation applied to solve for the x vector.
 
@@ -137,10 +137,11 @@ def back_sub(LU, b, ov):
     return x
 
 
-def lu_solve(LU, b):
+def lu_solve(LU, ov, b):
     """Applies the forward elimination and back substituation steps."""
-    b = for_elim(LU, b, ov)
-    x = back_sub(LU, b, ov)
+    b = for_elim(LU, ov, b)
+    print b
+    x = back_sub(LU, ov, b)
     return x
 
 
@@ -155,8 +156,8 @@ if __name__ == "__main__":
                   [-7.0],
                   [6.0]])
     print b1
-    LU, ov, b, x = lu_solve(A1, b1)
+    LU, ov = lu_decomp(A1)
     print LU
     print ov
-    print b
+    x = lu_solve(LU, ov, b1)
     print x
