@@ -39,6 +39,7 @@ def lu_decomp(A):
     #row reduction
     for j in xrange(nmo):
         pvt = abs(A[ov[j],j]) #gets current pvt on diagonal
+        new_pvt_row = None
         org_pvt_row = j #keeps track of row location of pvt
     
         #cycle thru entries in first column
@@ -51,7 +52,7 @@ def lu_decomp(A):
     
         #switch largest value to be pivot
         #this reduces rounding error
-        if org_pvt_row != new_pvt_row:
+        if (new_pvt_row != None and org_pvt_row != new_pvt_row):
             ov[org_pvt_row] = new_pvt_row
             ov[new_pvt_row] = org_pvt_row
     
@@ -140,21 +141,24 @@ def back_sub(LU, ov, b):
 def lu_solve(LU, ov, b):
     """Applies the forward elimination and back substituation steps."""
     b = for_elim(LU, ov, b)
-    print b
     x = back_sub(LU, ov, b)
     return x
 
 
 if __name__ == "__main__":
-    A1 = np.array([[0.0,2.0,0.0,1.0],
-                  [2.0,2.0,3.0,2.0],
-                  [4.0,-3.0,0.0,1.0],
-                  [6.0,1.0,-6.0,-5.0]])
+    #A1 = np.array([[0.0,2.0,0.0,1.0],
+    #              [2.0,2.0,3.0,2.0],
+    #              [4.0,-3.0,0.0,1.0],
+    #              [6.0,1.0,-6.0,-5.0]])
+    A1 = np.array([[696.0, 0.0],
+                  [0.0, 2142.25]])
     print A1
-    b1 = np.array([[0.0],
-                  [-2.0],
-                  [-7.0],
-                  [6.0]])
+    #b1 = np.array([[0.0],
+    #              [-2.0],
+    #              [-7.0],
+    #              [6.0]])
+    b1 = np.array([[150.0],
+                  [-300.0]])
     print b1
     LU, ov = lu_decomp(A1)
     print LU
