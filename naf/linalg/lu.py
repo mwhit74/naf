@@ -160,6 +160,7 @@ if __name__ == "__main__":
     b1 = np.array([[150.0],
                   [-300.0]])
     print b1
+    pdb.set_trace()
     LU, ov = lu_decomp(A1)
     print LU
     print ov
