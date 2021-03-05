@@ -1,8 +1,15 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
+Created on Tue Feb  2 05:26:13 2021
 
-This is a temporary script file.
+@author: m
+
+Ch1 p4
+
+Use bisection to find the smallest positive root of each of the following
+equations. Continue until the raltive accuracy is 0.5%. Use graphs to find good
+starting value.
 """
 
 from matplotlib import pyplot as plt
@@ -45,26 +52,14 @@ vf4 = np.vectorize(f4)
 # plt.grid(b=True, which='major', axis='both')
 # plt.show()
 
-val = bisect(f1, 0, 1, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+val = bisect(f1, 0, 1, root_tol = 0.00001, zero_tol = 0.00001)
+print(val)
 
-val = bisect(f2, 1, 2, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+val = bisect(f2, 1, 2, root_tol = 0.00001, zero_tol = 0.00001)
+print(val)
 
-val = bisect(f3, 0, 1, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+val = bisect(f3, 0, 1, root_tol = 0.00001, zero_tol = 0.00001)
+print(val)
 
-val = bisect(f4, 6, 7, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+val = bisect(f4, 6, 7, root_tol = 0.00001, zero_tol = 0.00001)
+print(val)

@@ -4,6 +4,12 @@
 Created on Tue Feb  2 07:58:57 2021
 
 @author: m
+
+Ch1 p7
+
+Repeat exercise 4, this time using the method of false position. Compare the 
+number of iterations required with the number used in bisection and with the 
+number used in the secant method.
 """
 
 from matplotlib import pyplot as plt
@@ -23,36 +29,24 @@ def f3(x):
 def f4(x):
     return -math.exp(x-1) + math.pow(x,3) + 2
 
-x1_range = np.linspace(-2.5, 2.5, 75)
-x2_range = np.linspace(-2.5, 2.5, 50)
-x3_range = np.linspace(-1, 1, 50)
-x4_range = np.linspace(5,7, 50)
+# x1_range = np.linspace(-2.5, 2.5, 75)
+# x2_range = np.linspace(-2.5, 2.5, 50)
+# x3_range = np.linspace(-1, 1, 50)
+# x4_range = np.linspace(5,7, 50)
 
-vf1 = np.vectorize(f1)
-vf2 = np.vectorize(f2)
-vf3 = np.vectorize(f3)
-vf4 = np.vectorize(f4)
+# vf1 = np.vectorize(f1)
+# vf2 = np.vectorize(f2)
+# vf3 = np.vectorize(f3)
+# vf4 = np.vectorize(f4)
 
 val = li(f1, 0, 1, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+print(val)
 
 val = li(f2, 1, 2, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+print(val)
 
 val = li(f3, 0, 1, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+print(val)
 
 val = li(f4, 6, 7, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+print(val)

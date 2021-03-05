@@ -4,6 +4,11 @@
 Created on Tue Feb  2 05:26:13 2021
 
 @author: m
+
+Ch1 p6
+
+Repeat exercise 4, this time using the secant method. compare the number of 
+iterations required with the number used in bisection.
 """
 
 from matplotlib import pyplot as plt
@@ -34,25 +39,13 @@ vf3 = np.vectorize(f3)
 vf4 = np.vectorize(f4)
 
 val = secant(f1, 0, 1, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+print(val)
 
 val = secant(f2, 1, 2, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+print(val)
 
 val = secant(f3, 0, 1, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+print(val)
 
 val = secant(f4, 6, 7, 0.00001)
-print(val[0])
-print(val[1])
-print(val[2])
-print('\n')
+print(val)
