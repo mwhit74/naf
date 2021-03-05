@@ -1,12 +1,11 @@
 
 import math
+import cmath
 import numpy as np
 
 
-
-
-
-def stepwise_search(fnc, x1, x2, tol = 0.001, incr = 10):
+def stepwise_search(fnc, x1, x2, tol = 0.0001, incr = 10):
+    
     """
     Finds root by reducing the incremental step when a sign change is detected.
 
@@ -17,25 +16,33 @@ def stepwise_search(fnc, x1, x2, tol = 0.001, incr = 10):
     program continus the reverals of direction with smaller steps until an
     accuracy of tol is achieved.
 
-    Arguements:
-        fnc (function): mathematical function to evaluate in terms of a single
-        variable
-        x1 (float): first guess
-        x2 (float): second guess
-        tol (float, optional): solution tolerance to analytically correct answer. Defaults
-        to 0.001
-        incr (int, optional): number of steps to create in the interval. This value is
-        also the scaler multiplier to increase the number of steps for each
-        iteration. For example incr=10, so there will be 10 equal steps in the
-        initial iteration and 10*10=100 equal steps in the second interation.
-        Defaults to 10.
+    Parameters
+    ----------
+        fnc : function
+            mathematical function to evaluate in terms of a single variable
+        x1 : float
+            initial estimate of root #1
+        x2 : float
+            initial estimate of root #2
+        tol : float, optional
+            solution tolerance to analytically correct answer. 
+            The default is 0.0001.
+        incr : int, optional
+            number of steps to create in the interval. This value is
+            also the scaler multiplier to increase the number of steps for each
+            iteration. For example incr=10, so there will be 10 equal steps in 
+            the initial iteration and 10*10=100 equal steps in the second 
+            interation.
+            The default is 10.
 
-    Returns:
-        [float, float] is successful.
-
-        The first index is the approximate root of the equation determined by the
-        stepwise search method and the second index is the value of the function at
-        the approximated root.
+    Returns
+    -------
+        Tuple(x2, y2)
+        
+        x2 : float
+            approximate value of the root
+        y2 : float
+            approximate value of the function at the root
 
     """
     yb = fnc(x2)
@@ -67,7 +74,8 @@ def stepwise_search(fnc, x1, x2, tol = 0.001, incr = 10):
 
 
 #bisection algorithm
-def bisect(fnc, x0, x1, tol = 0.001, iter_limit = 50, verbose=False):
+def bisect(fnc, x0, x1, root_tol = 0.0001, zero_tol = 0.0001, iter_limit = 50, 
+           verbose=False):
     """
     Root finding method using interval halving.
 
@@ -80,12 +88,13 @@ def bisect(fnc, x0, x1, tol = 0.001, iter_limit = 50, verbose=False):
         fnc : function
             mathematical function to evaluate in terms of a single variable
         x0 : float
-            initial estimate #1
+            initial estimate of root #1
         x1 : float
-            initial estimate #2
-        tol : float, optional
-            solution tolerance to analytically correct answer. 
-            Defaults to 0.001
+            initial estimate of root #2
+        root_tol : float, optional
+            soluation tolerance of root value. The default is 0.0001.
+        zero_tol : float, optional
+            solution tolerance of function value. The default is 0.0001.
         iter_limit : int, optional 
             maximum number of iterations to perform if the solution is not 
             coverging. Defaults to 50.
@@ -112,39 +121,43 @@ def bisect(fnc, x0, x1, tol = 0.001, iter_limit = 50, verbose=False):
             terminate.
     """
 
-    num_iter = 1 #initalize iteration counter
-    f2 = 1.0 #dummy value
-    while abs(x1-x0)/2 > tol or f2 == 0 or num_iter > iter_limit:
-        f0 = fnc(x0)
-        f1 = fnc(x1)
+    num_iter = 0 #initalize iteration counter
+    y2 = fnc(x1+x0)/2
+    x2 = (x1+x0)/2
+    
+    while (not(abs(x1-x0)/2 < root_tol or abs(y2) < zero_tol) 
+            and num_iter < iter_limit):
+        y0 = fnc(x0)
+        y1 = fnc(x1)
         #if both values are positive test fails
         #if both values are negative test fails
         #if one value is positive and one negative test passes
-        if f0*f1 > 0:
-            raise ValueError("The values" + str(f0) + " and " + str(f1) +\
-                    " do not bracket root")
+        if y0*y1 > 0:
+            raise ValueError(f'The values {y0} and {y1} do not bracket root')
             break
         x2 = (x0+x1)/2
-        f2 = fnc(x2)
+        y2 = fnc(x2)
 
-        if f2*f0 < 0:
+        if y2*y0 < 0:
             x1 = x2
         else:
             x0 = x2
-            
+        
+        num_iter += 1    
+        
         if verbose:
-            print(num_iter,x0, x1, x2, f2)
+            print(num_iter,x0, x1, x2, y2)
             
-        num_iter += 1
+        
 
-    return x2, fnc(x2), num_iter
-
-
+    return x2, y2, num_iter
 
 
 
 
-def secant(fnc, x0, x1, tol=0.001, iter_limit=50, verbose=False):
+
+
+def secant(fnc, x0, x1, zero_tol=0.0001, iter_limit=50, verbose=False):
     """
     Root finding method using the secant method.
     
@@ -160,17 +173,17 @@ def secant(fnc, x0, x1, tol=0.001, iter_limit=50, verbose=False):
         fnc : function
             mathematical function to evaluate in terms of a single variable
         x0 : float
-            initial estimate #1
-        x2 : float
-            initial estimate #2
+            initial estimate of root #1
+        x1 : float
+            initial estimate of root #2
         tol : float, optional
             solution tolerance to analytically correct answer. 
-            The default is 0.001.
+            The default is 0.0001.
         iter_limit : int, optional
             maximum number of iterations to perform if the solution is not 
             coverging. The default is 50.
         verbose : bool, optional
-            will print num_iter, x1, x2, x3, and f(x3) at each iteration step. 
+            will print num_iter, x0, x1, x2, and f(x2) at each iteration step. 
             The default is False.
 
     Returns
@@ -186,24 +199,26 @@ def secant(fnc, x0, x1, tol=0.001, iter_limit=50, verbose=False):
 
     """
     
-    num_iter = 1
-    x2 = 1.0
+    num_iter = 0
+    x2 = zero_tol*10000
     
     if fnc(x0) < fnc(x1):
         x_temp = x0
         x0 = x1
         x1 = x_temp
     
-    while abs(fnc(x2)) > tol and num_iter < iter_limit:
+    while abs(fnc(x2)) > zero_tol and num_iter < iter_limit:
            
         x2 = x1 - fnc(x1)*(x0-x1)/(fnc(x0)-fnc(x1))
         x0 = x1
         x1 = x2
         
+        num_iter += 1
+        
         if verbose:
             print(num_iter, x0, x1, fnc(x1))
         
-        num_iter += 1
+        
         
     return (x2, fnc(x2), num_iter)
 
@@ -211,7 +226,8 @@ def secant(fnc, x0, x1, tol=0.001, iter_limit=50, verbose=False):
 
 
 
-def li(fnc, x0, x1, tol = 0.001, iter_limit = 50, verbose=False):
+
+def li(fnc, x0, x1, tol = 0.0001, iter_limit = 50, verbose=False):
     """
     Root finding method using linear interpolation (false position).
 
@@ -222,14 +238,14 @@ def li(fnc, x0, x1, tol = 0.001, iter_limit = 50, verbose=False):
     Parameters
     ----------
         fnc : function
-            mathematical function to evalue in terms of a single variable
+            mathematical function to solve in terms of a single variable
         x0 : float 
-            initial estimate #1* (first guess)
+            initial estimate of root #1* (first guess)
         x1 : float
-            initial estimate #2* (second guess)
+            initial estimate of root #2* (second guess)
         tol : float, optional
             solution toleration to analytically correct answer. 
-            Defaults to 0.001
+            Defaults to 0.0001
         iter_limit : int, optional
             maximum number of iterations to persom if the solution is not 
             converging. Defaults to 20. 
@@ -255,80 +271,377 @@ def li(fnc, x0, x1, tol = 0.001, iter_limit = 50, verbose=False):
 
     """
 
-    num_iter = 1 #initialize iteration counter
+    num_iter = 0 #initialize iteration counter
 
     x2 = 1.0 #dummy value
 
     while abs(fnc(x2)) > tol and num_iter < iter_limit:
-        f0 = fnc(x0)
-        f1 = fnc(x1)
+        y0 = fnc(x0)
+        y1 = fnc(x1)
         
-        if f0*f1 > 0:
-            raise ValueError("The values" + str(f0) + " and " + str(f1) +\
+        if y0*y1 > 0:
+            raise ValueError("The values" + str(y0) + " and " + str(y1) +\
                     " do not bracket root")
             break
 
-        x2 = x1 - f1*(x0-x1)/(f0-f1)
-        f2 = fnc(x2)
+        x2 = x1 - y1*(x0-x1)/(y0-y1)
+        y2 = fnc(x2)
 
         #if f2 is on the opposite side of the x-axis as f0
         #x1 is updated to equal x2 since x2 is close to the root;
         #else f2 is on the same side of the x-axis as f0
         #x0 is updated to equal x2
-        if np.sign(f2) != np.sign(f0):
+        if np.sign(y2) != np.sign(y0):
             x1 = x2
         else:
             x0 = x2
             
-        if verbose:
-            print(num_iter, x0, x1, fnc(x1))
-            
         num_iter += 1
+            
+        if verbose:
+            print(num_iter, x0, x1, y2)
 
-    return x2, fnc(x2), num_iter
+    return x2, y2, num_iter
 
 
 
 
-def newton_a():
+
+
+def newtona():
     """Newton's method using finite differences to approximate derivative.
     
+    
+    See secant method and linear interpolation for an approximate Newton
+    method. 
     """
     pass
 
 
 
 
-def newton_e():
+
+
+def newtone(fnc, dfnc, x0, root_tol=0.0001, zero_tol=0.0001, iter_limit=20, 
+            verbose=False):
     """Newton's method using exact derivative provided by user.
     
-    
-    def f(x, c):
-    return x**2-c
+    Parameters
+    ----------
+        x0 : float
+            initial estimate of root
+        fnc : function
+            mathematical function to solve in terms of a single variable
+        dfnc : function
+            derivative of function
+        root_tol : float, optional
+            soluation tolerance of root value. The default is 0.0001.
+        zero_tol : float, optional
+            solution tolerance of function value. The default is 0.0001.
+        max_iter : int, optional
+            maximum number of iterations to perform if the solution is not 
+            converging. The default is 20.
+        verbose : bool, optional
+            will print num_iter, x0, x1, fnc(x1) at each iteration step. 
+            The default is False.
+            
 
-    def df(x):
-        return 2*x
-    
-    c = 101.0
-    x0 = xp = c/2.0
-    
-    e = 1.0
-    count = 0
-    
-    while e > 0.000000001:
-        xn = xp - f(xp, c)/df(xp)
-        e = f(xn, c)
-        xp = xn
-        count += 1
-    
-    print(xp, count)
+    Returns
+    -------
+        Tuple(x1, y1, num_iter)
+        
+        x1 : float
+            approximate value of the root
+        y1: float
+            value of the function at the approximated root
+        num_iter : int
+            number of iterations to find approximate root
+
     """
-    pass
+    
+
+    num_iter = 0
+    x1 = x0*10
+    
+    if fnc(x0) != 0 and dfnc(x0) != 0:
+        while (not(abs(x0-x1) < root_tol or abs(fnc(x0)) < zero_tol)
+                   and num_iter < iter_limit):
+            x1 = x0
+            x0 = x0 - fnc(x0)/dfnc(x0)
+            
+            num_iter += 1
+            
+            
+            if verbose:
+                print(num_iter, x1, x0, fnc(x0))
+            
+    return (x0, fnc(x0), num_iter)
 
 
 
 
-def horner_method(f, x):
+
+
+
+def muller(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
+            verbose = False):
+    """Muller's method
+
+    Parameters
+    ----------
+        fnc : function
+            mathematical function to solve in terms of a single variable
+        x0 : flaot
+            initial estimate of root #1
+        x1 : float
+            initial estimate of root #2
+        x2 : float
+            initial estimate of root #3
+        zero_tol : float, optional
+            solution tolerance of function value. The default is 0.0001.
+        iter_max : float, optional
+            maximum number of iterations if the solution is not converging.
+            The default value is 20.
+        verbose : bool, optional
+            will print num_iter, x0, x1, x2, y0, y1, y2, a, b, c, xr, fnc(xr) 
+            at each iteration step. 
+            The default is False.
+
+    Returns
+    -------
+        Tuple(xr, yr, num_iter)
+        
+        xr : float
+            approximate value of the root
+        yr: float
+            value of the function at the approximated root
+        num_iter : int
+            number of iterations to find approximate root
+
+    """
+    num_iter = 0
+    xr = zero_tol * 1000
+    
+    y0 = fnc(x0)
+    y1 = fnc(x1)
+    y2 = fnc(x2)
+    
+    zero_error = []
+    
+    while abs(fnc(xr)) > zero_tol and num_iter < iter_max:
+        
+        h1 = x1 - x0
+        h2 = x0 - x2
+        
+        gamma = h2/h1
+        
+        a = (gamma*y1 - y0*(1+gamma) + y2)/(gamma*pow(h1,2)*(1+gamma))
+        b = (y1 - y0 - a*pow(h1,2))/h1
+        c = y0
+        
+        #chooses root nearest the middle point x0
+        if b > 0:
+            d = +1*math.sqrt(pow(b,2)-4*a*c)
+        if b < 0:
+            d = -1*math.sqrt(pow(b,2)-4*a*c)
+        if b == 0:
+            d = +1*math.sqrt(pow(b,2)-4*a*c)
+            
+        
+        xr = x0 - (2*c)/(b + d)
+        
+        num_iter += 1
+        
+        if verbose:
+            print(num_iter, x0, x1, x2, y0, y1, y2, xr, fnc(xr))            
+        
+        if xr > x0:
+            x2 = x0
+            x0 = xr
+            x1 = x1
+            
+            y2 = y0
+            y0 = fnc(xr)
+            y1 = y1
+        else:
+            x2 = x2
+            x1 = x0
+            x0 = xr
+            
+            y2 = y2
+            y1 = y0
+            y0 = fnc(xr)
+            
+    return (xr, fnc(xr), num_iter)
+
+
+
+
+
+
+
+
+def muller_c(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
+            verbose = False):
+    """
+    Muller algorithm with complex numbers
+
+    Parameters
+    ----------
+        fnc : function
+            mathematical function to solve in terms of a single variable
+        x0 : flaot
+            initial estimate of root #1
+        x1 : float
+            initial estimate of root #2
+        x2 : float
+            initial estimate of root #3
+        zero_tol : float, optional
+            solution tolerance of function value. The default is 0.0001.
+        iter_max : float, optional
+            maximum number of iterations if the solution is not converging.
+            The default value is 20.
+        verbose : bool, optional
+            will print num_iter, x0, x1, x2, y0, y1, y2, a, b, c, xr, fnc(xr) 
+            at each iteration step. 
+            The default is False.
+
+    Returns
+    -------
+        Tuple(xr, yr, num_iter)
+        
+        xr : float
+            approximate value of the root
+        yr: float
+            value of the function at the approximated root
+        num_iter : int
+            number of iterations to find approximate root
+
+    """
+    num_iter = 0
+    xr = zero_tol * 1000
+    
+    y0 = fnc(x0)
+    y1 = fnc(x1)
+    y2 = fnc(x2)
+    
+    while abs(fnc(xr)) > zero_tol and num_iter < iter_max:
+        
+        h1 = x1 - x0
+        h2 = x0 - x2
+        
+        gamma = h2/h1
+        
+        a = (gamma*y1 - y0*(1+gamma) + y2)/(gamma*pow(h1,2)*(1+gamma))
+        b = (y1 - y0 - a*pow(h1,2))/h1
+        c = y0
+        
+        #chooses root nearest the middle point x0
+        # if b > 0 +0j:
+        #     d = +1*cmath.sqrt(pow(b,2)-4*a*c)
+        # if b < 0 +0j:
+        #     d = -1*cmath.sqrt(pow(b,2)-4*a*c)
+        # if b == 0 +0j:
+        #     d = +1*cmath.sqrt(pow(b,2)-4*a*c)
+            
+        d = cmath.sqrt(pow(b,2)-4*a*c)
+        e = (2*c)/(b + d)
+        f = (2*c)/(b - d)
+        
+        if e >= f:
+            xr1 = x0 - e
+        else:
+            xr1 = x0 - f
+        
+        num_iter += 1
+        
+        if verbose:
+            print(num_iter, x0, x1, x2, y0, y1, y2, xr, fnc(xr))            
+        
+        if xr > x0:
+            x2 = x0
+            x0 = xr
+            x1 = x1
+            
+            y2 = y0
+            y0 = fnc(xr)
+            y1 = y1
+        else:
+            x2 = x2
+            x1 = x0
+            x0 = xr
+            
+            y2 = y2
+            y1 = y0
+            y0 = fnc(xr)
+            
+    return (xr, fnc(xr), num_iter)
+
+
+
+
+
+
+
+
+def fpi(fnc, x0, root_tol=0.0001, iter_max=50, verbose=False):
+    """
+    Fixed-Point Iteration method
+    
+    Root finding method that uses the current point to calculate the next point
+    iteratively towards the approximated root. 
+
+    Parameters
+    ----------
+    fnc : function
+        mathematical function to solve in terms of a single variable;
+        rearranged function in the form x = g(x)
+            f(x) = x^2 - 2x - 3 = 0
+            x = g(x) = sqrt(2x + 3)
+    x0 : float
+        initial estimate of root
+    root_tol : float, optional
+        Solution convergence tolerance. The default is 0.0001.
+    iter_max : float, optional
+        Maximum number of iterations if the solution is not coverging. 
+        The default is 50.
+    verbose : bool, optional
+        will print num_iter, x0, x1, fnc(x1). The default is False.
+
+    Returns
+    -------
+    Tuple(x1, y1, num_iter)
+    
+    x1 : float
+        approximated root value
+    y1 : float
+        value of the function at the approximated root
+    num_iter : int
+        number of iterations to find approximate root
+
+    """
+    num_iter = 0
+    x1 = root_tol * 100
+    
+    while abs(x0 - x1) > root_tol and num_iter < iter_max:
+        x1 = x0
+        x0 = fnc(x0)
+        
+        num_iter += 1
+        
+        if verbose:
+            print(num_iter, x1, x0, fnc(x0))
+            
+    return (x0, fnc(x0), num_iter)
+
+
+
+
+
+
+
+
+def horner(pc, x):
     """
     Horner's Method or synethic division.
     
@@ -339,39 +652,40 @@ def horner_method(f, x):
 
     Parameters
     ----------
-    f : list
-        polynomial coefficients in order of increasing exponent power
-        a_1*x^4 + a_2*x^3 + a_3*x^2 + a_4*x + a_5
-        f = [a_5, a_4, a_3, a_2, a_1]
+    pc : list
+         polynomial coefficients in order of increasing exponent power
+         a_1*x^4 + a_2*x^3 + a_3*x^2 + a_4*x + a_5
+         pc = [a_5, a_4, a_3, a_2, a_1]
     x : float
         initial estimate of root 
 
     Returns
     -------
-    g : list
-        polynomical coefficients of defleated polynomial in order of increasing
-        power
+    dpc : list
+         polynomical coefficients of defleated polynomial in order of increasing
+         power
     R : float
         remainder after synethic division
 
     """
 
-    n = len(f)-1
-    g = np.zeros(n+1)
+    n = len(pc)-1
+    dpc = np.zeros(n+1)
     
     for i in range(n-1, -1, -1):
-        g[i] = f[i+1] + x*g[i+1]
+        dpc[i] = pc[i+1] + x*dpc[i+1]
         
-    R = f[0] + x*g[0]
+    R = pc[0] + x*dpc[0]
         
-    return g, R
+    return dpc, R
 
 
 
 
 
 
-def ndpnm(f, x, abs_error=0.001, max_iter=20):
+
+def ndpnm(pc, x, abs_error=0.0001, max_iter=20):
     """
     N-degree polynomial Newton's method
     
@@ -383,23 +697,25 @@ def ndpnm(f, x, abs_error=0.001, max_iter=20):
 
     Parameters
     ----------
-    f : list
-        polynomial coefficients in order of increasing exponent power
-        a_1*x^4 + a_2*x^3 + a_3*x^2 + a_4*x + a_5
-        f = [a_5, a_4, a_3, a_2, a_1]
+    pc : list
+         polynomial coefficients in order of increasing exponent power
+         
+         a_1*x^4 + a_2*x^3 + a_3*x^2 + a_4*x + a_5
+         
+         pc = [a_5, a_4, a_3, a_2, a_1]
     x : float
         initial estimate of root 
     abs_error : float
-        absolute error, convergence tolerance for root. The default is 0.001.
+        absolute error, convergence tolerance for root. The default is 0.0001.
     max_iter : int
         maximum number of iterations allowed to achieve convergence tolerance.
         The default is 20.
 
     Returns
     -------
-    g : list
-        polynomical coefficients of defleated polynomial in order of increasing
-        power
+    dpc : list
+          polynomial coefficients of defleated polynomial in order of increasing
+          power
     cur_x : float
         a root of the polynomial equation
         
@@ -407,11 +723,11 @@ def ndpnm(f, x, abs_error=0.001, max_iter=20):
     -----------
     #a0, a(0+1), a(0+2), ..., a(n)
     #3rd degree polynomial
-    f = np.array([110, -7, -8, 1]) #coefficients in reverse order
+    pc = np.array([110, -7, -8, 1]) #coefficients in reverse order
     guess_x = 4
     max_iter = 20
     
-    g, x = ndpnm(f, guess_x, 0.001, 20)
+    dpc, x = ndpnm(f, guess_x, 0.0001, 20)
     x1, x2 = quadratic_roots(g)
     
     print(x, x1, x2)
@@ -423,8 +739,8 @@ def ndpnm(f, x, abs_error=0.001, max_iter=20):
     
     while error > abs_error and count < max_iter:
         
-        g, R1 = horner_method(f, x)
-        h, R2 = horner_method(g, x)
+        dpc, R1 = horner(pc, x)
+        tpc, R2 = horner(dpc, x)
         
         cur_x = x - R1/R2
         
@@ -433,20 +749,21 @@ def ndpnm(f, x, abs_error=0.001, max_iter=20):
         
         x = cur_x
     
-    return g, cur_x
+    return dpc, cur_x
 
 
 
 
 
 
-def quadratic_roots(f):
+
+def quadratic_roots(pc):
     """Compute the roots of a quadratic equation.
     
     Parameters
     ----------
-        f : list
-            [c, b, a] coefficients of the quadratic equation in reverse order
+        pc : list
+             [c, b, a] coefficients of the quadratic equation in reverse order
             
     Returns
     -------
@@ -457,11 +774,27 @@ def quadratic_roots(f):
         x2 : float
             second root   
     """
-    a = f[2]
-    b = f[1]
-    c = f[0]
+    a = pc[2]
+    b = pc[1]
+    c = pc[0]
     
     x1 = (-b + math.sqrt(b**2-4*a*c))/(2*a)
     x2 = (-b - math.sqrt(b**2-4*a*c))/(2*a)
 
     return x1, x2
+        
+
+
+
+
+
+def dekker(fnc, x0, x1, root_tol = 0.0001, max_iter = 50):
+    pass
+
+
+
+
+
+def brent(fnc, x0, x1, root_tol = 0.0001, max_iter = 50):
+    pass
+    
