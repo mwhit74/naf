@@ -3,8 +3,10 @@ import math
 import cmath
 import numpy as np
 
+class ConvergenceError(Exception):
+    pass
 
-def stepwise_search(fnc, x1, x2, tol = 0.0001, incr = 10):
+def stepwise_search(fnc, x1, x2, zero_tol = 0.0001, incr = 10):
     
     """
     Finds root by reducing the incremental step when a sign change is detected.
@@ -13,7 +15,7 @@ def stepwise_search(fnc, x1, x2, tol = 0.0001, incr = 10):
     interval beginning at x=x1 with steps equal to (x1+x2)/incr until a sign
     change is detected. Then it steps back through the now smaller enclosing
     interval in steps 1/incr as large to more precisely isolate the root. The
-    program continus the reverals of direction with smaller steps until an
+    program continues the reverals of direction with smaller steps until an
     accuracy of tol is achieved.
 
     Parameters
@@ -24,8 +26,8 @@ def stepwise_search(fnc, x1, x2, tol = 0.0001, incr = 10):
             initial estimate of root #1
         x2 : float
             initial estimate of root #2
-        tol : float, optional
-            solution tolerance to analytically correct answer. 
+        zero_tol : float, optional
+            solution tolerance of function value. 
             The default is 0.0001.
         incr : int, optional
             number of steps to create in the interval. This value is
@@ -51,8 +53,8 @@ def stepwise_search(fnc, x1, x2, tol = 0.0001, incr = 10):
     step = (x1+x2)/incr
     x_step = x1 + step
     y_step = fnc(x_step)
-    error = 1.0 #dummy value
-    while error > tol:
+    error = zero_tol + 1 #dummy value
+    while error > zero_tol:
         while np.sign(y_step) != np.sign(yb):
             prev_x_step = x_step
             x_step = x_step + step
@@ -66,6 +68,7 @@ def stepwise_search(fnc, x1, x2, tol = 0.0001, incr = 10):
         step = (x1+x2)/incr*np.sign(step)*-1
         x_step = x_step + step
         y_step = fnc(x_step)
+        
     return est_val, fnc(est_val)
 
 
@@ -74,7 +77,7 @@ def stepwise_search(fnc, x1, x2, tol = 0.0001, incr = 10):
 
 
 #bisection algorithm
-def bisect(fnc, x0, x1, root_tol = 0.0001, zero_tol = 0.0001, iter_limit = 50, 
+def bisect(fnc, x0, x1, root_tol = 0.0001, zero_tol = 0.0001, max_iter = 50, 
            verbose=False):
     """
     Root finding method using interval halving.
@@ -95,7 +98,7 @@ def bisect(fnc, x0, x1, root_tol = 0.0001, zero_tol = 0.0001, iter_limit = 50,
             soluation tolerance of root value. The default is 0.0001.
         zero_tol : float, optional
             solution tolerance of function value. The default is 0.0001.
-        iter_limit : int, optional 
+        max_iter : int, optional 
             maximum number of iterations to perform if the solution is not 
             coverging. Defaults to 50.
         verbose : bool, optional
@@ -126,7 +129,7 @@ def bisect(fnc, x0, x1, root_tol = 0.0001, zero_tol = 0.0001, iter_limit = 50,
     x2 = (x1+x0)/2
     
     while (not(abs(x1-x0)/2 < root_tol or abs(y2) < zero_tol) 
-            and num_iter < iter_limit):
+            and num_iter < max_iter):
         y0 = fnc(x0)
         y1 = fnc(x1)
         #if both values are positive test fails
@@ -148,7 +151,8 @@ def bisect(fnc, x0, x1, root_tol = 0.0001, zero_tol = 0.0001, iter_limit = 50,
         if verbose:
             print(num_iter,x0, x1, x2, y2)
             
-        
+    if num_iter == max_iter - 1:
+        raise ConvergenceError(fnc_name='bisect')
 
     return x2, y2, num_iter
 
@@ -157,7 +161,7 @@ def bisect(fnc, x0, x1, root_tol = 0.0001, zero_tol = 0.0001, iter_limit = 50,
 
 
 
-def secant(fnc, x0, x1, zero_tol=0.0001, iter_limit=50, verbose=False):
+def secant(fnc, x0, x1, zero_tol=0.0001, max_iter=50, verbose=False):
     """
     Root finding method using the secant method.
     
@@ -179,7 +183,7 @@ def secant(fnc, x0, x1, zero_tol=0.0001, iter_limit=50, verbose=False):
         tol : float, optional
             solution tolerance to analytically correct answer. 
             The default is 0.0001.
-        iter_limit : int, optional
+        max_iter : int, optional
             maximum number of iterations to perform if the solution is not 
             coverging. The default is 50.
         verbose : bool, optional
@@ -200,14 +204,14 @@ def secant(fnc, x0, x1, zero_tol=0.0001, iter_limit=50, verbose=False):
     """
     
     num_iter = 0
-    x2 = zero_tol*10000
+    x2 = zero_tol+1
     
     if fnc(x0) < fnc(x1):
         x_temp = x0
         x0 = x1
         x1 = x_temp
     
-    while abs(fnc(x2)) > zero_tol and num_iter < iter_limit:
+    while abs(fnc(x2)) > zero_tol and num_iter < max_iter:
            
         x2 = x1 - fnc(x1)*(x0-x1)/(fnc(x0)-fnc(x1))
         x0 = x1
@@ -218,7 +222,8 @@ def secant(fnc, x0, x1, zero_tol=0.0001, iter_limit=50, verbose=False):
         if verbose:
             print(num_iter, x0, x1, fnc(x1))
         
-        
+    if num_iter == max_iter - 1:
+        raise ConvergenceError(fnc_name='secant')
         
     return (x2, fnc(x2), num_iter)
 
@@ -227,7 +232,7 @@ def secant(fnc, x0, x1, zero_tol=0.0001, iter_limit=50, verbose=False):
 
 
 
-def li(fnc, x0, x1, tol = 0.0001, iter_limit = 50, verbose=False):
+def li(fnc, x0, x1, tol = 0.0001, max_iter = 50, verbose=False):
     """
     Root finding method using linear interpolation (false position).
 
@@ -246,7 +251,7 @@ def li(fnc, x0, x1, tol = 0.0001, iter_limit = 50, verbose=False):
         tol : float, optional
             solution toleration to analytically correct answer. 
             Defaults to 0.0001
-        iter_limit : int, optional
+        max_iter : int, optional
             maximum number of iterations to persom if the solution is not 
             converging. Defaults to 20. 
         verbose : bool, optional
@@ -273,9 +278,9 @@ def li(fnc, x0, x1, tol = 0.0001, iter_limit = 50, verbose=False):
 
     num_iter = 0 #initialize iteration counter
 
-    x2 = 1.0 #dummy value
+    x2 = tol + 1 #dummy value
 
-    while abs(fnc(x2)) > tol and num_iter < iter_limit:
+    while abs(fnc(x2)) > tol and num_iter < max_iter:
         y0 = fnc(x0)
         y1 = fnc(x1)
         
@@ -300,6 +305,9 @@ def li(fnc, x0, x1, tol = 0.0001, iter_limit = 50, verbose=False):
             
         if verbose:
             print(num_iter, x0, x1, y2)
+            
+    if num_iter == max_iter - 1:
+        raise ConvergenceError(fnc_name='li')
 
     return x2, y2, num_iter
 
@@ -322,7 +330,7 @@ def newtona():
 
 
 
-def newtone(fnc, dfnc, x0, root_tol=0.0001, zero_tol=0.0001, iter_limit=20, 
+def newton_e(fnc, dfnc, x0, root_tol=0.0001, zero_tol=0.0001, max_iter=20, 
             verbose=False):
     """Newton's method using exact derivative provided by user.
     
@@ -361,11 +369,11 @@ def newtone(fnc, dfnc, x0, root_tol=0.0001, zero_tol=0.0001, iter_limit=20,
     
 
     num_iter = 0
-    x1 = x0*10
+    x1 = x0 + 1
     
     if fnc(x0) != 0 and dfnc(x0) != 0:
         while (not(abs(x0-x1) < root_tol or abs(fnc(x0)) < zero_tol)
-                   and num_iter < iter_limit):
+                   and num_iter < max_iter):
             x1 = x0
             x0 = x0 - fnc(x0)/dfnc(x0)
             
@@ -374,6 +382,9 @@ def newtone(fnc, dfnc, x0, root_tol=0.0001, zero_tol=0.0001, iter_limit=20,
             
             if verbose:
                 print(num_iter, x1, x0, fnc(x0))
+                
+    if num_iter == max_iter - 1:
+        raise ConvergenceError('newton_e')
             
     return (x0, fnc(x0), num_iter)
 
@@ -383,7 +394,7 @@ def newtone(fnc, dfnc, x0, root_tol=0.0001, zero_tol=0.0001, iter_limit=20,
 
 
 
-def muller(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
+def muller(fnc, x0, x1, x2, zero_tol = 0.0001, max_iter = 20,
             verbose = False):
     """Muller's method
 
@@ -399,7 +410,7 @@ def muller(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
             initial estimate of root #3
         zero_tol : float, optional
             solution tolerance of function value. The default is 0.0001.
-        iter_max : float, optional
+        max_iter : float, optional
             maximum number of iterations if the solution is not converging.
             The default value is 20.
         verbose : bool, optional
@@ -420,15 +431,13 @@ def muller(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
 
     """
     num_iter = 0
-    xr = zero_tol * 1000
+    xr = zero_tol + 1
     
     y0 = fnc(x0)
     y1 = fnc(x1)
     y2 = fnc(x2)
     
-    zero_error = []
-    
-    while abs(fnc(xr)) > zero_tol and num_iter < iter_max:
+    while abs(fnc(xr)) > zero_tol and num_iter < max_iter:
         
         h1 = x1 - x0
         h2 = x0 - x2
@@ -472,6 +481,9 @@ def muller(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
             y1 = y0
             y0 = fnc(xr)
             
+    if num_iter == max_iter - 1:
+        raise ConvergenceError(fnc_name='muller')
+            
     return (xr, fnc(xr), num_iter)
 
 
@@ -481,7 +493,7 @@ def muller(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
 
 
 
-def muller_c(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
+def muller_c(fnc, x0, x1, x2, zero_tol = 0.0001, max_iter = 20,
             verbose = False):
     """
     Muller algorithm with complex numbers
@@ -498,7 +510,7 @@ def muller_c(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
             initial estimate of root #3
         zero_tol : float, optional
             solution tolerance of function value. The default is 0.0001.
-        iter_max : float, optional
+        max_iter : float, optional
             maximum number of iterations if the solution is not converging.
             The default value is 20.
         verbose : bool, optional
@@ -519,13 +531,13 @@ def muller_c(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
 
     """
     num_iter = 0
-    xr = zero_tol * 1000
+    xr = zero_tol + 1
     
     y0 = fnc(x0)
     y1 = fnc(x1)
     y2 = fnc(x2)
     
-    while abs(fnc(xr)) > zero_tol and num_iter < iter_max:
+    while abs(fnc(xr)) > zero_tol and num_iter < max_iter:
         
         h1 = x1 - x0
         h2 = x0 - x2
@@ -575,6 +587,9 @@ def muller_c(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
             y1 = y0
             y0 = fnc(xr)
             
+    if num_iter == max_iter - 1:
+        raise ConvergenceError(fnc_name='muller_c')
+            
     return (xr, fnc(xr), num_iter)
 
 
@@ -584,7 +599,7 @@ def muller_c(fnc, x0, x1, x2, zero_tol = 0.0001, iter_max = 20,
 
 
 
-def fpi(fnc, x0, root_tol=0.0001, iter_max=50, verbose=False):
+def fpi(fnc, x0, root_tol=0.0001, max_iter=50, verbose=False):
     """
     Fixed-Point Iteration method
     
@@ -602,7 +617,7 @@ def fpi(fnc, x0, root_tol=0.0001, iter_max=50, verbose=False):
         initial estimate of root
     root_tol : float, optional
         Solution convergence tolerance. The default is 0.0001.
-    iter_max : float, optional
+    max_iter : float, optional
         Maximum number of iterations if the solution is not coverging. 
         The default is 50.
     verbose : bool, optional
@@ -621,9 +636,9 @@ def fpi(fnc, x0, root_tol=0.0001, iter_max=50, verbose=False):
 
     """
     num_iter = 0
-    x1 = root_tol * 100
+    x1 = root_tol + 1
     
-    while abs(x0 - x1) > root_tol and num_iter < iter_max:
+    while abs(x0 - x1) > root_tol and num_iter < max_iter:
         x1 = x0
         x0 = fnc(x0)
         
@@ -631,6 +646,9 @@ def fpi(fnc, x0, root_tol=0.0001, iter_max=50, verbose=False):
         
         if verbose:
             print(num_iter, x1, x0, fnc(x0))
+            
+    if num_iter == max_iter - 1:
+        raise ConvergenceError(fnc_name='fpi')
             
     return (x0, fnc(x0), num_iter)
 
@@ -685,7 +703,7 @@ def horner(pc, x):
 
 
 
-def ndpnm(pc, x, abs_error=0.0001, max_iter=20):
+def ndpnm(pc, x, root_tol=0.0001, max_iter=20):
     """
     N-degree polynomial Newton's method
     
@@ -697,7 +715,7 @@ def ndpnm(pc, x, abs_error=0.0001, max_iter=20):
 
     Parameters
     ----------
-    pc : list
+    pc : 1D numpy array
          polynomial coefficients in order of increasing exponent power
          
          a_1*x^4 + a_2*x^3 + a_3*x^2 + a_4*x + a_5
@@ -705,8 +723,8 @@ def ndpnm(pc, x, abs_error=0.0001, max_iter=20):
          pc = [a_5, a_4, a_3, a_2, a_1]
     x : float
         initial estimate of root 
-    abs_error : float
-        absolute error, convergence tolerance for root. The default is 0.0001.
+    root_tol : float
+        convergence tolerance for root. The default is 0.0001.
     max_iter : int
         maximum number of iterations allowed to achieve convergence tolerance.
         The default is 20.
@@ -734,10 +752,10 @@ def ndpnm(pc, x, abs_error=0.0001, max_iter=20):
 
     """
     
-    count = 0
-    error = abs_error * 100
+    num_iter = 0
+    error = root_tol + 1
     
-    while error > abs_error and count < max_iter:
+    while error > root_tol and num_iter < max_iter:
         
         dpc, R1 = horner(pc, x)
         tpc, R2 = horner(dpc, x)
@@ -745,11 +763,59 @@ def ndpnm(pc, x, abs_error=0.0001, max_iter=20):
         cur_x = x - R1/R2
         
         error = abs(x - cur_x)
-        count += 1
+        num_iter += 1
         
         x = cur_x
+        
+    if num_iter == max_iter - 1:
+        raise ConvergenceError(fnc_name='ndpnm')
     
-    return dpc, cur_x
+    return cur_x, dpc, num_iter
+
+
+
+
+def mrsv(pc, x, root_tol=0.0001, max_iter=20):
+    """
+    Multiple-root solver for polynomial equation via Netwon's method and 
+    synethic division.
+
+    Parameters
+    ----------
+    pc : 1D numpy array
+         polynomial coefficients in order of increasing exponent power
+         
+         a_1*x^4 + a_2*x^3 + a_3*x^2 + a_4*x + a_5
+         
+         pc = [a_5, a_4, a_3, a_2, a_1]
+    x : 1D numpy array
+        initial estimate of each root
+    root_tol : float
+        convergence tolerance for root. The default is 0.0001. 
+    max_iter : int
+        maximum number of iterations allowed to achieve convergence tolerance.
+        The default is 20.
+
+    Returns
+    -------
+    r : 1D numpy array
+        list of zeros for the polynomial function
+
+    """
+    r = np.zeros(pc.size-1)
+    
+    for i in range(len(pc)-1):
+        
+        try:
+            pc = ndpnm(pc, x[i], root_tol=root_tol, max_iter=max_iter)
+        except ConvergenceError as e:
+            print(e)
+            
+        r[i] = pc[0]
+        pc = pc[1][:-1]
+        
+    return r
+        
 
 
 
