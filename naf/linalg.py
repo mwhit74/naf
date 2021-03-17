@@ -433,3 +433,95 @@ def geji(a, x1, b, tol = 0.0001, max_iter = 50):
 
 
 
+
+def gegs(a, x1, b, w=1.0, tol = 0.0001, max_iter = 50):
+    """
+    Gauss-Seidel method: iterative solution to set of linear equations with 
+    optional over-relaxation 
+
+    Parameters
+    ----------
+    a : 2D numpy array
+        an n x n coefficient matrix of the linear equations to be solved
+    x1 : 1D numpy array
+        initial estimate of solution vector
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+    w : float
+        over-relaxation factor; 1.0 <= w <= 2.0. The default is 1.0, no 
+        over-relaxation. 
+    tol : float, optional
+        the convergence tolerance of the solution vector. The default is 0.0001.
+    max_iter : integer, optional
+        maximum number of iterations to perform if the solution is not
+        converging. The default is 50.
+
+    Raises
+    ------
+    Exception1 - non-square matrix
+        Forwards exception from ddm function
+    Exception2 - non-diagonally dominate matrix
+        Forwards exception from ddm function
+
+    Returns
+    -------
+    x1 : 1D numpy array
+        solution vector with an error tolerance of tol. Vector is reordered
+        to match original order of equations before permutations to create
+        a diagonally dominate matrix
+    verror : 1D numpy array
+        error vector; error of each solution. Vector is reordered
+        to match original order of equations before permutations to create
+        a diagonally dominate matrix
+    num_iter : integer
+        number of iterations required to converge.
+    """
+    
+    m, n = a.shape
+    
+    try:
+        a, ov = ddm(a)
+    except Exception as e:
+        raise e
+        
+    x1 = x1[ov]
+    b = b[ov]
+    
+    vtol = np.repeat(tol, m)
+    verror = np.repeat(tol+1,m)
+    
+    for i in range(m):
+        b[i] = b[i]*w/a[i,i]
+        for j in range(m):
+            if j != i:
+                a[i,j] = a[i,j]*w/a[i,i]
+                
+    for i in range(m):
+        a[i,i] = w*a[i,i]/a[i,i]
+    
+    num_iter = 0
+    x0 = np.zeros(ov.size)
+    
+    while np.all(verror > vtol) and num_iter < max_iter:
+        x0 = np.copy(x1)
+        for i in range(n):
+            x1[i] = x1[i] + b[i]
+            for j in range(n):
+                    if i == j:
+                        x1[i] = x1[i] - a[i,j]*x0[j]
+                    else:
+                        x1[i] = x1[i] - a[i,j]*x1[j]
+        
+        verror = np.absolute(np.subtract(x1, x0))
+        
+        num_iter += 1
+                    
+        
+    xt = np.zeros(ov.size)
+    vet = np.zeros(ov.size)
+    for i in range(ov.size):
+        xt[i] = x1[ov[i]]
+        vet[i] = verror[ov[i]]
+                    
+    return x1, verror, num_iter
+
