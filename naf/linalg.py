@@ -269,6 +269,165 @@ def gesv(lu, ov, b):
 
 
 
+def ddm(a):
+    """
+    Permutate matrix to be diagonally dominate if possible. 
+    
+    Checks for a square matrix.
+    
+    Checks for strict diagonal dominance per the following formula
+    
+    abs(a[i,i]) > sum(abs(a[i,j])) for j = 0 to n and j != i, i = 0, 1, ... ,n
+
+    Parameters
+    ----------
+    a : 2D numpy array
+        maxtrix to make diagonally dominate
+
+    Raises
+    ------
+    Exception 1
+        Raises Exception if matrix is not square.
+    Exception 2
+        Raises Exception if matrix cannot be permutated to a diagonally
+        dominate matrix
+
+    Returns
+    -------
+    a : 2D numpy array
+        permutation of the original matrix that is diagonally dominate
+    ov : 1D numpy array
+        order vector of diagonally dominate matrix permutation
+
+    """
+    m, n = a.shape
+    
+    if n != m:
+        raise Exception('Matrix is not square.')
+    
+    p = np.absolute(a)
+    
+    q = np.amax(p, 1)
+    r = np.argmax(p, 1)
+    s = np.sum(p, 1)
+    t = np.subtract(s, q)
+    
+    u = np.sort(r)
+    n,m = p.shape
+    v = np.arange(n)
+    
+    #check if matrix is strictly diagonally dominate
+    if np.all(q > t) and np.all(u == v):
+        #perumtate matrix to diagonally dominate
+        ov = np.arange(n)
+        for i in range(n):
+            ov[r[i]] = i
+        
+        return a[ov,:], ov
+    
+    else:
+        raise Exception('Matrix cannot be strictly diagonally dominate')
+    
+
+
+
+
+
+def geji(a, x1, b, tol = 0.0001, max_iter = 50):
+    """
+    Jacobian method: iterative solution to set of linear equations
+    
+    Uses fixed-point iteration on a set of equations to iteratively find
+    the solution.
+    
+    Checks for a square matrix. Raises an exception for a non-square matrix
+    
+    Checks for strict diagonal dominance to ensure convergence. Raises an 
+    exception if the matrix cannot be permutated to a strict diagonally
+    dominate matrix.
+
+    Parameters
+    ----------
+    a : 2D numpy array
+        an n x n coefficient matrix of the linear equations to be solved
+    x1 : 1D numpy array
+        initial estimate of solution vector
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+    tol : float, optional
+        the convergence tolerance of the solution vector. The default is 0.0001.
+    max_iter : integer, optional
+        maximum number of iterations to perform if the solution is not
+        converging. The default is 50.
+        
+    Raises
+    ------
+    Exception1 - non-square matrix
+        Forwards exception from ddm function
+    Exception2 - non-diagonally dominate matrix
+        Forwards exception from ddm function
+
+    Returns
+    -------
+    x2 : 1D numpy array
+        solution vector with an error tolerance of tol. Vector is reordered
+        to match original order of equations before permutations to create
+        a diagonally dominate matrix
+    verror : 1D numpy array
+        error vector; error of each solution. Vector is reordered
+        to match original order of equations before permutations to create
+        a diagonally dominate matrix
+    num_iter : integer
+        number of iterations required to converge.
+
+    """
+    m, n = a.shape
+    
+    try:
+        a, ov = ddm(a)
+    except Exception as e:
+        raise e
+        
+    x1 = x1[ov]
+    b = b[ov]
+    
+    x2 = np.zeros(n)
+    vtol = np.repeat(tol, m)
+    verror = np.repeat(tol+1, m)
+    
+    for i in range(m):
+        b[i] = b[i]/a[i,i]
+        x2[i] = x1[i]
+        for j in range(m):
+            if j != i:
+                a[i,j] = a[i,j]/a[i,i]
+    
+    num_iter = 0
+                
+    while np.all(verror > vtol) and num_iter < max_iter:
+        for i in range(m):
+            x1[i] = x2[i]
+            x2[i] = b[i]
+
+        for i in range(m):
+            for j in range(m):
+                if j != i:
+                    x2[i] = x2[i] - a[i,j]*x1[j]
+                    
+        verror = np.absolute(np.subtract(x2, x1))
+        
+        num_iter += 1
+    
+    #return to original equation order
+    xt = np.zeros(ov.size)
+    vet = np.zeros(ov.size)
+    for i in range(ov.size):
+        xt[i] = x2[ov[i]]
+        vet[i] = verror[ov[i]]
+        
+    
+    return xt, vet, num_iter
+
 
 
 
