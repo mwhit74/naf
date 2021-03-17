@@ -2,53 +2,75 @@
 import numpy as np
 import pdb
 
+"""Naming Convention
 
-def lu_decomp(A):
-    """Finds the LU decomposition of the matrix A.
+First two letters are the matrix type
 
-    This function factors the A matrix into two matricies L and U. L is a lower
+ge - generic
+td - tridiagonal
+
+Second two letters are the method used
+
+ga - gaussian elimination
+fe - forward elimination
+bs - back substitution
+
+"""
+
+def gega(a):
+    """Generic square matrix LU Decomposition using Gaussian elmination with 
+    partial pivoting.
+
+    This function factors the a matrix into two matricies L and U. L is a lower
     triangular matrix of the multiplication coefficients with 1's on the
     diagonal. U is an upper triangular matrix of the remaining coefficients of
-    the original A matrix after pivoting and row reduction.
+    the original a matrix after pivoting and row reduction.
 
     This function does the decomposition in place. That is to say it stores the
-    resulting values in the A matrix. 
+    resulting values in the a matrix. 
 
     This function also keeps track of any row exchanges due to partial pivoting
     of the rows. 
 
-    Args:
-        A (two dimensional numpy array): matrix to be factored into LU
+    Paremeters
+    ----------
+    a : 2D numpy array 
+        an n x n matrix to be factored into LU
 
-    Retuns:
-        A (two dimensional numpy array): combined L and U matricies; L is the
-            lower triangular with 1's on the diagonal; U is the upper triangular
-            including the values on the diagonal
-        ov (one dimensional numpy array): the permutated order of the rows after
-            partial pivoting and factorization
+    Raises
+    ------
+    Exception
+        If the matrix is not square it is not invertable.
+    
+    Returns
+    -------
+    a : 2D numpy array
+        combined L and U matricies; L is the lower triangular with 1's on 
+        the diagonal; U is the upper triangular including the values on 
+        the diagonal
+    ov : 1D numpy array 
+        row order vector; keeps track of the reordering due to 
+        partial pivoting of the rows
 
     """
-    n,m = A.shape
-    #n minus one, shape returns the number of elements; not good for
-    #indexing
-    nmo = n - 1
+    n,m = a.shape
     ov = np.arange(n) #order_vector
     
     if n != m:
-        raise ValueError("Matrix is not sqaure.")
+        raise Exception("Matrix is not sqaure.")
     
     #row reduction
-    for j in xrange(nmo):
-        pvt = abs(A[ov[j],j]) #gets current pvt on diagonal
+    for j in range(n):
+        pvt = abs(a[ov[j],j]) #gets current pvt on diagonal
         new_pvt_row = None
         org_pvt_row = j #keeps track of row location of pvt
     
         #cycle thru entries in first column
         #find largest value
         #aka finding the max pivot
-        for i in xrange(j+1,n):
-            if abs(A[ov[i],j]) > pvt:
-                pvt = abs(A[ov[i],j])
+        for i in range(j+1,n):
+            if abs(a[ov[i],j]) > pvt:
+                pvt = abs(a[ov[i],j])
                 new_pvt_row = i
     
         #switch largest value to be pivot
@@ -58,112 +80,197 @@ def lu_decomp(A):
             ov[new_pvt_row] = org_pvt_row
     
         #calculates multipliers for row reduction
-        for i in xrange(j+1,n):
-            A[ov[i],j] = A[ov[i],j]/A[ov[j],j]
+        for i in range(j+1,n):
+            a[ov[i],j] = a[ov[i],j]/a[ov[j],j]
+
     
         #creates zeros below the main diagonal
-        for i in xrange(j+1,n): #row number
-            for k in xrange(j+1,n): #column number
-                A[ov[i],k] = A[ov[i],k] - A[ov[i],j]*A[ov[j],k]
+        for i in range(j+1,n): #row number
+            for k in range(j+1,n): #column number
+                a[ov[i],k] = a[ov[i],k] - a[ov[i],j]*a[ov[j],k]
     
-    return A, ov #where A is now L in the lower and U in the upper
+    return a, ov #where a is now L in the lower and U in the upper
 
 
-def for_elim(LU, ov, b):
-    """Forward elmination applied to the b vector.
+
+
+def tdga(a):
+    """Tridiagonal matrix LU decomposition using Gaussian elimination without
+    partial pivoting.
+
+    This function factors the a matrix into two matricies L and U. L is a lower
+    triangular matrix of the multiplication coefficients with 1's on the
+    diagonal. U is an upper triangular matrix of the remaining coefficients of
+    the original a matrix after pivoting and row reduction.
+
+    This function does the decomposition in place. That is to say it stores the
+    resulting values in the a matrix. 
+
+    Parameters
+    ----------
+    a : 2D numpy array
+        n x 2 matrix which is a compressed form of a tridiagonal matrix
+
+    Returns
+    -------
+    a : 2D numpy array
+        n x 2 matrix which is a compressed form of a tridiagonal matrix;
+        combined L and U matricies; L is the lower triangular with 1's on 
+        the diagonal; U is the upper triangular including the values on 
+        the diagonal
+
+    """
+    
+    n, m = a.shape
+    
+    if m != 4:
+        raise Exception('a tridiagonal matrix is represented as an n x 3.')
+    
+    for i in range(1,n):
+        a[i,1] = a[i,1]/a[i-1,2]
+        a[i,2] = a[i,2] - a[i,1]*a[i-1,3]    
+    
+    return a
+
+
+
+
+
+def gefe(lu, ov, b):
+    """Generic matrix forward elmination applied to the b vector.
 
     Applies the operations recorded in the decomposition, the L lower triangular
     matrix and the row exchanges, to the b vector. 
 
-    This step can be taken in the LU decomposition function but there are
+    This step can be taken in the lu decomposition function but there are
     significant efficienies to be gained by having a separate function if there
     are multiple b vectors to be considered which is very often the case. 
 
-    Args:
-        LU (two dimensional numpy array): factored A matrix; L is the lower
-            triangular with 1's on the diagonal; U is the upper triangular including
-            the values on the diagonal
-        b (one dimensional numpy array): the right hand side; the constant
-            values in the equations
-        ov (one dimensional numpy array): the permutated order of the rows after
-            partial pivoting and factorization
+    Parameters
+    ----------
+    lu : 2D numpy array
+         factored A matrix; L is the lower triangular with 1's on the 
+         diagonal; U is the upper triangular including the values on the 
+         diagonal
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+    ov : 1D numpy array
+         row order vector; keeps track of the reordering due to 
+        partial pivoting of the rows
 
-    Returns:
-        b (one dimensional numpy array): often referred to 'c' in literature on
-            the subject; the b vector with the factored operations from the
-            decomposition applied
+    Returns
+    -------
+    b : 1D numpy array
+        intermediate solution vector
+        the b vector with the factored operations from the decomposition 
+        applied; often referred to as 'c' in literature on the subject
 
     """
-    n,m = LU.shape
-    nmo = n - 1
-    for j in xrange(nmo):
-        for i in xrange(j+1,n):
-            b[ov[i]] = b[ov[i]] - LU[ov[i],j]*b[ov[j]]
+    n,m = lu.shape
+    for j in range(n):
+        for i in range(j+1,n):
+            b[ov[i]] = b[ov[i]] - lu[ov[i],j]*b[ov[j]]
 
     return b
 
 
-def back_sub(LU, ov, b):
+
+def tdfe(LU, b):
     """
-    Back substituation applied to solve for the x vector.
+    Tridiagonal matrix forward substitution.
+
+    Parameters
+    ----------
+    lu : 2D numpy array
+         factored A matrix; L is the lower triangular with 1's on the 
+         diagonal; U is the upper triangular including the values on the 
+         diagonal
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+
+    Returns
+    -------
+    None.
+
+    """
+    pass
+
+
+def gebs(lu, ov, b):
+    """
+    Generic matrix back substituation applied to solve for the x vector.
 
     Solves the upper triangular matrix U with the factored b vector for the x
     vector. 
 
-    Args:
-        LU (two dimensional numpy array): factored A matrix; L is the lower
-            triangular with 1's on the diagonal; U is the upper triangular including
-            the values on the diagonal
-        b (one dimensional numpy array): often referred to 'c' in literature on
-            the subject; the b vector with the factored operations from the
-            decomposition applied
-        ov (one dimensional numpy array): the permutated order of the rows after
-            partial pivoting and factorization
+    Paramters
+    ---------
+    lu : 2D numpy array
+        factored A matrix; L is the lower triangular with 1's on the 
+        diagonal; U is the upper triangular including the values on the diagonal
+    b : 1D numpy array
+        intermediate solution vector;
+        the b vector with the factored operations from the decomposition 
+        applied; often referred to as 'c' in literature on the subject
+    ov : 1D numpy array
+        row order vector; keeps track of the reordering due to 
+        partial pivoting of the rows
 
-    Retuns:
-        x (one dimensional numpy array): the solution vector
+    Retuns
+    ------
+    x : 1D numpy array
+        the solution vector
     
     """
-    n,m = LU.shape
-    nmo = n - 1
+    m, n = lu.shape
+    mmo = m - 1
     x = np.empty((n,1),dtype='float')   
     #back substitution
-    x[ov[nmo]] = b[ov[nmo]]/LU[ov[nmo],nmo] # last row solution
-    for j in xrange(nmo-1,-1,-1):
+    x[ov[mmo]] = b[ov[mmo]]/lu[ov[mmo],mmo] # last row solution
+    for j in range(mmo,-1,-1):
         x[ov[j]] = b[ov[j]] #initialize solution value
-        for k in xrange(nmo,j,-1):
+        for k in range(mmo,j,-1):
             #group known terms in numerator
-            x[ov[j]] = x[ov[j]] - x[ov[k]]*LU[ov[j],k] 
-        x[ov[j]] = x[ov[j]]/LU[ov[j],j] #solving equation by division
+            x[ov[j]] = x[ov[j]] - x[ov[k]]*lu[ov[j],k] 
+        x[ov[j]] = x[ov[j]]/lu[ov[j],j] #solving equation by division
     
     return x
 
 
-def lu_solve(LU, ov, b):
-    """Applies the forward elimination and back substituation steps."""
-    b = for_elim(LU, ov, b)
-    x = back_sub(LU, ov, b)
-    return x
+def gesv(lu, ov, b):
+    """Generic matrix application of the forward elimination and back 
+    substituation steps.
+    
+
+    Parameters
+    ----------
+    lu : 2D numpy array
+         matrix decomposed into upper and lower operation coefficients for
+         forward and back substitution
+    ov : 1D numpy arry
+         row order vector; keeps track of the reordering due to 
+         partial pivoting of the rows
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+
+    Returns
+    -------
+    x : 1D numpy array
+        solution vector
+
+    """
+
+    b = gefe(lu, ov, b)
+    x = gebs(lu, ov, b)
+    return x 
 
 
-if __name__ == "__main__":
-    #A1 = np.array([[0.0,2.0,0.0,1.0],
-    #              [2.0,2.0,3.0,2.0],
-    #              [4.0,-3.0,0.0,1.0],
-    #              [6.0,1.0,-6.0,-5.0]])
-    A1 = np.array([[696.0, 0.0],
-                  [0.0, 2142.25]])
-    print A1
-    #b1 = np.array([[0.0],
-    #              [-2.0],
-    #              [-7.0],
-    #              [6.0]])
-    b1 = np.array([[150.0],
-                  [-300.0]])
-    print b1
-    pdb.set_trace()
-    LU, ov = lu_decomp(A1)
-    print LU
-    print ov
-    x = lu_solve(LU, ov, b1)
-    print x
+
+
+
+
+
+
+
+
+
