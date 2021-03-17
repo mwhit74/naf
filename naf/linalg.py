@@ -85,8 +85,9 @@ def gega(a):
             #checking for no solutions, more unknowns than equations,
             #linear dependence, a singular matrix
             if np.isclose(a[ov[i], j],0.0):
-                msg = ('Value approx. zero on diagonal; matrix is at least'
-                       'unstable and could be singular')
+                msg = ('Value approx. zero on diagonal; matrix is at least '
+                       'unstable and could be singular or could have '
+                       'an infinite number of solutions')
                 raise Exception(msg)
 
     
