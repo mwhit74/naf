@@ -82,6 +82,12 @@ def gega(a):
         #calculates multipliers for row reduction
         for i in range(j+1,n):
             a[ov[i],j] = a[ov[i],j]/a[ov[j],j]
+            #checking for no solutions, more unknowns than equations,
+            #linear dependence, a singular matrix
+            if np.isclose(a[ov[i], j],0.0):
+                msg = ('Value approx. zero on diagonal; matrix is at least'
+                       'unstable and could be singular')
+                raise Exception(msg)
 
     
         #creates zeros below the main diagonal
