@@ -11,14 +11,15 @@ td - tridiagonal
 
 Second two letters are the method used
 
-ga - gaussian elimination
+do - doolittle reduction
+cr - crout reduction
 fe - forward elimination
 bs - back substitution
 
 """
 
-def gega(a):
-    """Generic square matrix LU Decomposition using Gaussian elmination with 
+def gedo(a, pivot=True):
+    """Generic square matrix LU Decomposition using Doolittle algorithm with
     partial pivoting.
 
     This function factors the a matrix into two matricies L and U. L is a lower
@@ -36,11 +37,14 @@ def gega(a):
     ----------
     a : 2D numpy array 
         an n x n matrix to be factored into LU
+    pivot : boolean, optional
+        a flag to turn partial pivoting on or off. The default is True. This
+        means partial pivoting is ON by default.
 
     Raises
     ------
     Exception
-        If the matrix is not square it is not invertable.
+        None invertible matrix. Could be not square or non-singular. 
     
     Returns
     -------
@@ -53,6 +57,7 @@ def gega(a):
         partial pivoting of the rows
 
     """
+    a = a.copy()
     n,m = a.shape
     ov = np.arange(n) #order_vector
     
@@ -60,50 +65,50 @@ def gega(a):
         raise Exception("Matrix is not sqaure.")
     
     #row reduction
-    for j in range(n):
-        pvt = abs(a[ov[j],j]) #gets current pvt on diagonal
-        new_pvt_row = None
-        org_pvt_row = j #keeps track of row location of pvt
-    
-        #cycle thru entries in first column
-        #find largest value
-        #aka finding the max pivot
-        for i in range(j+1,n):
-            if abs(a[ov[i],j]) > pvt:
-                pvt = abs(a[ov[i],j])
-                new_pvt_row = i
-    
-        #switch largest value to be pivot
-        #this reduces rounding error
-        if (new_pvt_row != None and org_pvt_row != new_pvt_row):
-            ov[org_pvt_row] = new_pvt_row
-            ov[new_pvt_row] = org_pvt_row
+    for j in range(0,n):
+        if pivot:
+            pvt = abs(a[ov[j],j]) #gets current pvt on diagonal
+            new_pvt_row = None
+            org_pvt_row = j #keeps track of row location of pvt
+        
+            #cycle thru entries in first column
+            #find largest value
+            #aka finding the max pivot
+            for i in range(j+1,n):
+                if abs(a[ov[i],j]) > pvt:
+                    pvt = abs(a[ov[i],j])
+                    new_pvt_row = i
+        
+            #switch largest value to be pivot
+            #this reduces rounding error
+            if (new_pvt_row != None and org_pvt_row != new_pvt_row):
+                ov[org_pvt_row] = new_pvt_row
+                ov[new_pvt_row] = org_pvt_row
+            
+        #checking for no solutions, more unknowns than equations,
+        #linear dependence, a singular matrix
+        if np.isclose(a[ov[j], j],0.0):
+            msg = ('Value approx. zero on diagonal; matrix is at least '
+                   'unstable and could be singular or could have '
+                   'an infinite number of solutions')
+            raise Exception(msg)
     
         #calculates multipliers for row reduction
         for i in range(j+1,n):
             a[ov[i],j] = a[ov[i],j]/a[ov[j],j]
-            #checking for no solutions, more unknowns than equations,
-            #linear dependence, a singular matrix
-            if np.isclose(a[ov[i], j],0.0):
-                msg = ('Value approx. zero on diagonal; matrix is at least '
-                       'unstable and could be singular or could have '
-                       'an infinite number of solutions')
-                raise Exception(msg)
 
     
         #creates zeros below the main diagonal
         for i in range(j+1,n): #row number
             for k in range(j+1,n): #column number
+
                 a[ov[i],k] = a[ov[i],k] - a[ov[i],j]*a[ov[j],k]
     
     return a, ov #where a is now L in the lower and U in the upper
 
 
-
-
-def tdga(a):
-    """Tridiagonal matrix LU decomposition using Gaussian elimination without
-    partial pivoting.
+def tddo(a):
+    """Tridiagonal matrix LU decomposition using Doolittle algorithm
 
     This function factors the a matrix into two matricies L and U. L is a lower
     triangular matrix of the multiplication coefficients with 1's on the
@@ -127,7 +132,7 @@ def tdga(a):
         the diagonal
 
     """
-    
+    a = a.copy()
     n, m = a.shape
     
     if m != 4:
@@ -139,7 +144,114 @@ def tdga(a):
     
     return a
 
+def gecr(a, pivot=True):
+    """Generic square matrix LU Decomposition using Doolittle algorithm with
+    partial pivoting.
+    
 
+    Parameters
+    ----------
+    a : 2D numpy array
+        n x n matrix to be factored into LU
+    pivot : boolean, optional
+        a flag to turn partial pivoting on or off. The default is True. This
+        means partial pivoting is ON by default.
+
+    Raises
+    ------
+    Exception
+        None invertible matrix. Could be not square or non-singular. 
+    
+    Returns
+    -------
+    a : 2D numpy array
+        combined L and U matricies; L is the lower triangular including the 
+        values on the diagonal; U is the upper triangular with 1's on the 
+        diagonal
+    ov : 1D numpy array 
+        row order vector; keeps track of the reordering due to 
+        partial pivoting of the rows
+
+    """
+    a = a.copy()
+    n,m = a.shape
+    ov = np.arange(n) #order_vector
+    
+    if n != m:
+        raise Exception("Matrix is not sqaure.")
+    
+    for j in range(0,n):
+        #partial pivot of rows
+        if pivot:
+            pvt = abs(a[ov[j], j])
+            new_pvt_row = None
+            org_pvt_row = j
+            
+            for i in range(j+1, n):
+                if abs(a[ov[i],j]) > pvt:
+                    pvt = a[ov[i], j]
+                    new_pvt_row = i
+                    
+            if new_pvt_row != None and new_pvt_row != org_pvt_row:
+                ov[org_pvt_row] = new_pvt_row
+                ov[new_pvt_row] = org_pvt_row
+                
+        #checking for no solutions, more unknowns than equations,
+        #linear dependence, a singular matrix
+        if np.isclose(a[ov[j], j],0.0):
+            msg = ('Value approx. zero on diagonal; matrix is at least '
+                   'unstable and could be singular or could have '
+                   'an infinite number of solutions')
+            raise Exception(msg)
+                
+        if j == 0:
+            #loop not necessary if in-place storage is used
+            #included here for completness
+            #for i in range(0,n)
+            #   l[i,1] = a[i,1]
+            
+            for i in range(1,n):
+                a[ov[0],i] = a[ov[0],i]/a[ov[0],0]
+                
+        else:
+            for i in range(j,n):
+                sum = 0.0
+                sum_str = ''
+                for k in range(0,j):
+                    sum += a[ov[i],k]*a[ov[k],j]
+                a[ov[i],j] = a[ov[i],j] - sum
+                
+            for i in range(j+1, n):
+                sum = 0.0
+                for k in range(0,j):
+                    sum += a[ov[j],k]*a[ov[k],i]
+                a[j,i] = (a[ov[j],i] - sum)/a[ov[j],j]
+            
+    return a, ov
+            
+    
+
+
+
+def tdfe(LU, b):
+    """
+    Tridiagonal matrix forward substitution.
+
+    Parameters
+    ----------
+    lu : 2D numpy array
+         factored A matrix; L is the lower triangular with 1's on the 
+         diagonal; U is the upper triangular including the values on the 
+         diagonal
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+
+    Returns
+    -------
+    None.
+
+    """
+    pass
 
 
 
@@ -173,6 +285,7 @@ def gefe(lu, ov, b):
         applied; often referred to as 'c' in literature on the subject
 
     """
+    b = b.copy()
     n,m = lu.shape
     for j in range(n):
         for i in range(j+1,n):
@@ -180,27 +293,6 @@ def gefe(lu, ov, b):
 
     return b
 
-
-
-def tdfe(LU, b):
-    """
-    Tridiagonal matrix forward substitution.
-
-    Parameters
-    ----------
-    lu : 2D numpy array
-         factored A matrix; L is the lower triangular with 1's on the 
-         diagonal; U is the upper triangular including the values on the 
-         diagonal
-    b : 1D numpy array
-        the right hand side; the constant values in the equations
-
-    Returns
-    -------
-    None.
-
-    """
-    pass
 
 
 def gebs(lu, ov, b):
@@ -229,6 +321,7 @@ def gebs(lu, ov, b):
         the solution vector
     
     """
+    b = b.copy()
     m, n = lu.shape
     mmo = m - 1
     x = np.empty((n,1),dtype='float')   
@@ -266,10 +359,40 @@ def gesv(lu, ov, b):
         solution vector
 
     """
-
+    b = b.copy()
+    
     b = gefe(lu, ov, b)
     x = gebs(lu, ov, b)
     return x 
+
+
+def det(a):
+    
+    #compute matrix LU decomposition
+    lu, ov = gedo(a)
+    
+    m,n = lu.shape
+        
+    #count number of swapped rows
+    rc = 0
+    v = np.arange(ov.size)
+    for x,y in zip(ov, v):
+        if x != y:
+            rc += 1
+    #2 swapped rows equals 1 interchange
+    rc = rc / 2.0
+    
+    #multiply entries on diagonal of LU matrix
+    det = 1
+    for i in range(m):
+        det = det*lu[ov[i],i]
+        
+    #for odd number of row interchanges det * -1
+    if rc % 2 != 0:
+        det = -1*det
+        
+    return det
+
 
 
 
@@ -334,7 +457,7 @@ def ddm(a):
     
     else:
         raise Exception('Matrix cannot be strictly diagonally dominate')
-    
+
 
 
 
@@ -388,6 +511,7 @@ def geji(a, x1, b, tol = 0.0001, max_iter = 50):
         number of iterations required to converge.
 
     """
+    a = a.copy()
     m, n = a.shape
     
     try:
@@ -483,7 +607,7 @@ def gegs(a, x1, b, w=1.0, tol = 0.0001, max_iter = 50):
     num_iter : integer
         number of iterations required to converge.
     """
-    
+    a = a.copy()
     m, n = a.shape
     
     try:
