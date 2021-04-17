@@ -144,6 +144,181 @@ def tddo(a):
     
     return a
 
+
+            
+    
+
+
+
+def tdfe(LU, b):
+    """
+    Tridiagonal matrix forward substitution.
+
+    Parameters
+    ----------
+    lu : 2D numpy array
+         factored A matrix; L is the lower triangular with 1's on the 
+         diagonal; U is the upper triangular including the values on the 
+         diagonal
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+
+    Returns
+    -------
+    None.
+
+    """
+    pass
+
+
+
+def dofe(lu, ov, b):
+    """
+    Doolittle reduction forward elmination applied to the b vector.
+
+    Applies the operations recorded in the decomposition, the L lower triangular
+    matrix and the row exchanges, to the b vector. 
+
+    This step can be taken in the lu decomposition function but there are
+    significant efficienies to be gained by having a separate function if there
+    are multiple b vectors to be considered which is very often the case. 
+
+    Parameters
+    ----------
+    lu : 2D numpy array
+         factored A matrix; L is the lower triangular with 1's on the 
+         diagonal; U is the upper triangular including the values on the 
+         diagonal
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+    ov : 1D numpy array
+         row order vector; keeps track of the reordering due to 
+        partial pivoting of the rows
+
+    Returns
+    -------
+    b : 1D numpy array
+        intermediate solution vector
+        the b vector with the factored operations from the decomposition 
+        applied; often referred to as 'c' in literature on the subject
+
+    """
+    b = b.copy()
+    n,m = lu.shape
+    for j in range(n):
+        for i in range(j+1,n):
+            b[ov[i]] = b[ov[i]] - lu[ov[i],j]*b[ov[j]]
+
+    return b
+
+
+
+def dobs(lu, ov, b):
+    """
+    Doolittle reduction back substituation applied to solve for the x vector.
+
+    Solves the upper triangular matrix U with the factored b vector for the x
+    vector. 
+
+    Paramters
+    ---------
+    lu : 2D numpy array
+        factored A matrix; L is the lower triangular with 1's on the 
+        diagonal; U is the upper triangular including the values on the diagonal
+    b : 1D numpy array
+        intermediate solution vector;
+        the b vector with the factored operations from the decomposition 
+        applied; often referred to as 'c' in literature on the subject
+    ov : 1D numpy array
+        row order vector; keeps track of the reordering due to 
+        partial pivoting of the rows
+
+    Retuns
+    ------
+    x : 1D numpy array
+        the solution vector
+    
+    """
+    b = b.copy()
+    m, n = lu.shape
+    mmo = m - 1
+    x = np.empty((n),dtype='float')   
+    #back substitution
+    x[ov[mmo]] = b[ov[mmo]]/lu[ov[mmo],mmo] # last row solution
+    for j in range(mmo,-1,-1):
+        x[ov[j]] = b[ov[j]] #initialize solution value
+        for k in range(mmo,j,-1):
+            #group known terms in numerator
+            x[ov[j]] = x[ov[j]] - x[ov[k]]*lu[ov[j],k] 
+        x[ov[j]] = x[ov[j]]/lu[ov[j],j] #solving equation by division
+    
+    return x
+
+
+def dosv(lu, ov, b):
+    """Doolittle reduction application of the forward elimination and back 
+    substituation steps.
+    
+
+    Parameters
+    ----------
+    lu : 2D numpy array
+         matrix decomposed into upper and lower operation coefficients for
+         forward and back substitution
+    ov : 1D numpy arry
+         row order vector; keeps track of the reordering due to 
+         partial pivoting of the rows
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+
+    Returns
+    -------
+    x : 1D numpy array
+        solution vector
+
+    """
+    b = b.copy()
+    
+    b = dofe(lu, ov, b)
+    x = dobs(lu, ov, b)
+    return x 
+
+
+def det(a):
+    
+    #compute matrix LU decomposition
+    lu, ov = gedo(a)
+    
+    m,n = lu.shape
+        
+    #count number of swapped rows
+    rc = 0
+    v = np.arange(ov.size)
+    for x,y in zip(ov, v):
+        if x != y:
+            rc += 1
+    #2 swapped rows equals 1 interchange
+    rc = rc / 2.0
+    
+    #multiply entries on diagonal of LU matrix
+    det = 1
+    for i in range(m):
+        det = det*lu[ov[i],i]
+        
+    #for odd number of row interchanges det * -1
+    if rc % 2 != 0:
+        det = -1*det
+        
+    return det
+
+
+
+#######################
+#   CROUT REDUCTION
+#######################
+
+
+
 def gecr(a, pivot=True):
     """Generic square matrix LU Decomposition using Doolittle algorithm with
     partial pivoting.
@@ -216,7 +391,6 @@ def gecr(a, pivot=True):
         else:
             for i in range(j,n):
                 sum = 0.0
-                sum_str = ''
                 for k in range(0,j):
                     sum += a[ov[i],k]*a[ov[k],j]
                 a[ov[i],j] = a[ov[i],j] - sum
@@ -228,35 +402,11 @@ def gecr(a, pivot=True):
                 a[j,i] = (a[ov[j],i] - sum)/a[ov[j],j]
             
     return a, ov
-            
-    
 
 
-
-def tdfe(LU, b):
+def crfe(lu, ov, b):
     """
-    Tridiagonal matrix forward substitution.
-
-    Parameters
-    ----------
-    lu : 2D numpy array
-         factored A matrix; L is the lower triangular with 1's on the 
-         diagonal; U is the upper triangular including the values on the 
-         diagonal
-    b : 1D numpy array
-        the right hand side; the constant values in the equations
-
-    Returns
-    -------
-    None.
-
-    """
-    pass
-
-
-
-def gefe(lu, ov, b):
-    """Generic matrix forward elmination applied to the b vector.
+    Crout reduction forward elmination applied to the b vector.
 
     Applies the operations recorded in the decomposition, the L lower triangular
     matrix and the row exchanges, to the b vector. 
@@ -285,19 +435,24 @@ def gefe(lu, ov, b):
         applied; often referred to as 'c' in literature on the subject
 
     """
-    b = b.copy()
-    n,m = lu.shape
-    for j in range(n):
-        for i in range(j+1,n):
-            b[ov[i]] = b[ov[i]] - lu[ov[i],j]*b[ov[j]]
+    
+    n, m = lu.shape
+    
+    c = b.copy()
+    
+    c[ov[0]] = b[ov[0]] / lu[ov[0],0]
+    
+    for i in range(1, n):
+        for j in range(0, i):
+            c[ov[i]] = c[ov[i]] - lu[ov[i],j]*c[ov[j]]
+        c[ov[i]] = c[ov[i]]/lu[ov[i],i]
+        
+    return c
 
-    return b
 
-
-
-def gebs(lu, ov, b):
+def crbs(lu, ov , c):
     """
-    Generic matrix back substituation applied to solve for the x vector.
+    Crout reduction back substituation applied to solve for the x vector.
 
     Solves the upper triangular matrix U with the factored b vector for the x
     vector. 
@@ -321,24 +476,20 @@ def gebs(lu, ov, b):
         the solution vector
     
     """
-    b = b.copy()
-    m, n = lu.shape
-    mmo = m - 1
-    x = np.empty((n,1),dtype='float')   
-    #back substitution
-    x[ov[mmo]] = b[ov[mmo]]/lu[ov[mmo],mmo] # last row solution
-    for j in range(mmo,-1,-1):
-        x[ov[j]] = b[ov[j]] #initialize solution value
-        for k in range(mmo,j,-1):
-            #group known terms in numerator
-            x[ov[j]] = x[ov[j]] - x[ov[k]]*lu[ov[j],k] 
-        x[ov[j]] = x[ov[j]]/lu[ov[j],j] #solving equation by division
+    n,m = lu.shape
+    x = np.empty((n,1), dtype=float)
+    x = c.copy()
     
+    for i in range(n-2, -1, -1):
+        for j in range(n-1, i, -1):
+            x[ov[i]] = x[ov[i]] - lu[ov[i],j]*x[ov[j]]
+            
     return x
 
 
-def gesv(lu, ov, b):
-    """Generic matrix application of the forward elimination and back 
+
+def crsv(lu, ov, b):
+    """Crout reduction application of the forward elimination and back 
     substituation steps.
     
 
@@ -359,42 +510,20 @@ def gesv(lu, ov, b):
         solution vector
 
     """
+
     b = b.copy()
     
-    b = gefe(lu, ov, b)
-    x = gebs(lu, ov, b)
+    c = crfe(lu, ov, b)
+    x = crbs(lu, ov, c)
     return x 
 
 
-def det(a):
-    
-    #compute matrix LU decomposition
-    lu, ov = gedo(a)
-    
-    m,n = lu.shape
-        
-    #count number of swapped rows
-    rc = 0
-    v = np.arange(ov.size)
-    for x,y in zip(ov, v):
-        if x != y:
-            rc += 1
-    #2 swapped rows equals 1 interchange
-    rc = rc / 2.0
-    
-    #multiply entries on diagonal of LU matrix
-    det = 1
-    for i in range(m):
-        det = det*lu[ov[i],i]
-        
-    #for odd number of row interchanges det * -1
-    if rc % 2 != 0:
-        det = -1*det
-        
-    return det
 
 
 
+#########################
+#    ITERATIVE METHODS
+#########################
 
 
 

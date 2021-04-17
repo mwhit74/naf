@@ -6,7 +6,7 @@ Created on Thu Apr  1 08:43:09 2021
 @author: m
 """
 
-from naf.linalg import gedo, gesv, gecr, gebs, gefe
+from naf.linalg import gedo, dosv, gecr, crsv
 import numpy as np
 
 a = np.array([[4,2,1,-3],
@@ -24,29 +24,31 @@ lu, ov = gedo(a, pivot=False)
 
 print(lu)
 
-x1 = gesv(lu, ov, b1)
+x1 = dosv(lu, ov, b1)
 
 print(x1)
 
-# x2 = gesv(lu, ov, b2)
+x2 = dosv(lu, ov, b2)
 
-# print(x2)
+print(x2)
 
-# x3 = gesv(lu, ov, b3)
+x3 = dosv(lu, ov, b3)
 
-# print(x3)
+print(x3)
 
 crlu, ov = gecr(a, pivot=False)
 
-print(lu)
+print(crlu)
+
+x1 = crsv(crlu, ov, b1)
 
 print(x1)
 
-# x2 = gesv(lu, ov, b2)
+x2 = crsv(crlu, ov, b2)
 
-# print(x2)
+print(x2)
 
-# x3 = gesv(lu, ov, b3)
+x3 = crsv(crlu, ov, b3)
 
-# print(x3)
+print(x3)
 
