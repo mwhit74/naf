@@ -4,6 +4,15 @@
 Created on Thu Apr  1 08:43:09 2021
 
 @author: m
+
+Suppose that we do not know all of the three r.h.s.'s of p18 in advance.
+
+a. Solve Ax = b1 by Gaussian elimination, getting the LU decomposition. Then,
+use the LU to solve with the other two r.h.s.'s
+
+b. Repeat part (a), this time using Crout reduction.
+
+See below for matrix A and, b1, b2, and b3.
 """
 
 from naf.linalg import gedo, dosv, gecr, crsv
