@@ -18,6 +18,17 @@ bs - back substitution
 
 """
 
+
+
+
+#######################
+# DOOLITTLE REDUCTION
+#######################
+
+
+
+
+
 def gedo(a, pivot=True):
     """Generic square matrix LU Decomposition using Doolittle algorithm with
     partial pivoting.
@@ -107,71 +118,6 @@ def gedo(a, pivot=True):
     return a, ov #where a is now L in the lower and U in the upper
 
 
-def tddo(a):
-    """Tridiagonal matrix LU decomposition using Doolittle algorithm
-
-    This function factors the a matrix into two matricies L and U. L is a lower
-    triangular matrix of the multiplication coefficients with 1's on the
-    diagonal. U is an upper triangular matrix of the remaining coefficients of
-    the original a matrix after pivoting and row reduction.
-
-    This function does the decomposition in place. That is to say it stores the
-    resulting values in the a matrix. 
-
-    Parameters
-    ----------
-    a : 2D numpy array
-        n x 2 matrix which is a compressed form of a tridiagonal matrix
-
-    Returns
-    -------
-    a : 2D numpy array
-        n x 2 matrix which is a compressed form of a tridiagonal matrix;
-        combined L and U matricies; L is the lower triangular with 1's on 
-        the diagonal; U is the upper triangular including the values on 
-        the diagonal
-
-    """
-    a = a.copy()
-    n, m = a.shape
-    
-    if m != 4:
-        raise Exception('a tridiagonal matrix is represented as an n x 3.')
-    
-    for i in range(1,n):
-        a[i,1] = a[i,1]/a[i-1,2]
-        a[i,2] = a[i,2] - a[i,1]*a[i-1,3]    
-    
-    return a
-
-
-            
-    
-
-
-
-def tdfe(LU, b):
-    """
-    Tridiagonal matrix forward substitution.
-
-    Parameters
-    ----------
-    lu : 2D numpy array
-         factored A matrix; L is the lower triangular with 1's on the 
-         diagonal; U is the upper triangular including the values on the 
-         diagonal
-    b : 1D numpy array
-        the right hand side; the constant values in the equations
-
-    Returns
-    -------
-    None.
-
-    """
-    pass
-
-
-
 def dofe(lu, ov, b):
     """
     Doolittle reduction forward elmination applied to the b vector.
@@ -197,23 +143,23 @@ def dofe(lu, ov, b):
 
     Returns
     -------
-    b : 1D numpy array
+    c : 1D numpy array
         intermediate solution vector
         the b vector with the factored operations from the decomposition 
         applied; often referred to as 'c' in literature on the subject
 
     """
-    b = b.copy()
+    c = b.copy()
     n,m = lu.shape
     for j in range(n):
         for i in range(j+1,n):
-            b[ov[i]] = b[ov[i]] - lu[ov[i],j]*b[ov[j]]
+            c[ov[i]] = c[ov[i]] - lu[ov[i],j]*c[ov[j]]
 
-    return b
+    return c
 
 
 
-def dobs(lu, ov, b):
+def dobs(lu, ov, c):
     """
     Doolittle reduction back substituation applied to solve for the x vector.
 
@@ -225,7 +171,7 @@ def dobs(lu, ov, b):
     lu : 2D numpy array
         factored A matrix; L is the lower triangular with 1's on the 
         diagonal; U is the upper triangular including the values on the diagonal
-    b : 1D numpy array
+    c : 1D numpy array
         intermediate solution vector;
         the b vector with the factored operations from the decomposition 
         applied; often referred to as 'c' in literature on the subject
@@ -239,12 +185,12 @@ def dobs(lu, ov, b):
         the solution vector
     
     """
-    b = b.copy()
+    c = c.copy()
     m, n = lu.shape
     mmo = m - 1
     x = np.empty((n),dtype='float')   
     #back substitution
-    x[ov[mmo]] = b[ov[mmo]]/lu[ov[mmo],mmo] # last row solution
+    x[ov[mmo]] = c[ov[mmo]]/lu[ov[mmo],mmo] # last row solution
     for j in range(mmo,-1,-1):
         x[ov[j]] = b[ov[j]] #initialize solution value
         for k in range(mmo,j,-1):
@@ -279,8 +225,8 @@ def dosv(lu, ov, b):
     """
     b = b.copy()
     
-    b = dofe(lu, ov, b)
-    x = dobs(lu, ov, b)
+    c = dofe(lu, ov, b)
+    x = dobs(lu, ov, c)
     return x 
 
 
@@ -310,6 +256,164 @@ def det(a):
         det = -1*det
         
     return det
+
+
+
+
+
+######################
+# TRI-DIAGONAL 
+######################
+
+
+
+
+
+def tddo(a):
+    """Tridiagonal matrix LU decomposition using Doolittle algorithm
+
+    This function factors the a matrix into two matricies L and U. L is a lower
+    triangular matrix of the multiplication coefficients with 1's on the
+    diagonal. U is an upper triangular matrix of the remaining coefficients of
+    the original a matrix after pivoting and row reduction.
+
+    This function does the decomposition in place. That is to say it stores the
+    resulting values in the a matrix. 
+
+    Parameters
+    ----------
+    a : 2D numpy array
+        n x 2 matrix which is a compressed form of a tridiagonal matrix
+
+    Returns
+    -------
+    a : 2D numpy array
+        n x 2 matrix which is a compressed form of a tridiagonal matrix;
+        combined L and U matricies; L is the lower triangular with 1's on 
+        the diagonal; U is the upper triangular including the values on 
+        the diagonal
+
+    """
+    a = a.copy()
+    n, m = a.shape
+    
+    if m != 3:
+        raise Exception('a tridiagonal matrix is represented as an n x 3.')
+
+    for i in range(1,n):
+        a[i,0] = a[i,0]/a[i-1,1]
+        a[i,1] = a[i,1] - a[i,0]*a[i-1,2]    
+    
+    return a
+
+def tdfe(lu, b):
+    """
+    Doolittle reduction forward elmination applied to the b vector.
+
+    Applies the operations recorded in the decomposition, the L lower triangular
+    matrix and the row exchanges, to the b vector. 
+
+    This step can be taken in the lu decomposition function but there are
+    significant efficienies to be gained by having a separate function if there
+    are multiple b vectors to be considered which is very often the case. 
+
+    Parameters
+    ----------
+    lu : 2D numpy array
+         factored A matrix; L is the lower triangular with 1's on the 
+         diagonal; U is the upper triangular including the values on the 
+         diagonal
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+    ov : 1D numpy array
+         row order vector; keeps track of the reordering due to 
+        partial pivoting of the rows
+
+    Returns
+    -------
+    c : 1D numpy array
+        intermediate solution vector
+        the b vector with the factored operations from the decomposition 
+        applied; often referred to as 'c' in literature on the subject
+    """
+    c = b.copy()
+    n, m = lu.shape
+    
+    if m != 3:
+        raise Exception('a tridiagonal matrix is represented as an n x 3.')
+    
+    for i in range(1, n):
+        c[i] = c[i] - lu[i,0]*c[i-1]
+        
+    return c
+
+def tdbs(lu, c):
+    """
+    Doolittle reduction back substituation applied to solve for the x vector.
+
+    Solves the upper triangular matrix U with the factored b vector for the x
+    vector. 
+
+    Paramters
+    ---------
+    lu : 2D numpy array
+        factored A matrix; L is the lower triangular with 1's on the 
+        diagonal; U is the upper triangular including the values on the diagonal
+    c : 1D numpy array
+        intermediate solution vector;
+        the b vector with the factored operations from the decomposition 
+        applied; often referred to as 'c' in literature on the subject
+    ov : 1D numpy array
+        row order vector; keeps track of the reordering due to 
+        partial pivoting of the rows
+
+    Retuns
+    ------
+    x : 1D numpy array
+        the solution vector
+    """
+    
+    x = c.copy()
+    n, m = lu.shape
+    
+    if m != 3:
+        raise Exception('a tridiagonal matrix is represented as an n x 3.')
+    
+    x[n-1] = x[n-1]/lu[n-1,1]
+    
+    for i in range(n-2, -1, -1):
+        x[i] = (x[i] - lu[i,2]*x[i+1])/lu[i,1]
+        
+    return x
+
+def tdsv(lu, b):
+    """Doolittle reduction application of the forward elimination and back 
+    substituation steps.
+    
+
+    Parameters
+    ----------
+    lu : 2D numpy array
+         matrix decomposed into upper and lower operation coefficients for
+         forward and back substitution
+    ov : 1D numpy arry
+         row order vector; keeps track of the reordering due to 
+         partial pivoting of the rows
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+
+    Returns
+    -------
+    x : 1D numpy array
+        solution vector
+
+    """
+    b = b.copy()
+    
+    c = tdfe(lu, b)
+    x = tdbs(lu, c)
+    return x 
+
 
 
 
