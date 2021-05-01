@@ -1,6 +1,7 @@
 
 import numpy as np
 import pdb
+from warnings import warn
 
 """Naming Convention
 
@@ -93,16 +94,18 @@ def gedo(a, pivot=True):
             #switch largest value to be pivot
             #this reduces rounding error
             if (new_pvt_row != None and org_pvt_row != new_pvt_row):
-                ov[org_pvt_row] = new_pvt_row
-                ov[new_pvt_row] = org_pvt_row
+                temp_org_pvt_row = ov[org_pvt_row]
+                temp_new_pvt_row = ov[new_pvt_row]
+                ov[org_pvt_row] = temp_new_pvt_row
+                ov[new_pvt_row] = temp_org_pvt_row
             
         #checking for no solutions, more unknowns than equations,
         #linear dependence, a singular matrix
         if np.isclose(a[ov[j], j],0.0):
-            msg = ('Value approx. zero on diagonal; matrix is at least '
+            msg = ('Approximate zero value on diagonal; matrix is at least '
                    'unstable and could be singular or could have '
                    'an infinite number of solutions')
-            raise Exception(msg)
+            warn(msg)
     
         #calculates multipliers for row reduction
         for i in range(j+1,n):
@@ -192,7 +195,7 @@ def dobs(lu, ov, c):
     #back substitution
     x[ov[mmo]] = c[ov[mmo]]/lu[ov[mmo],mmo] # last row solution
     for j in range(mmo,-1,-1):
-        x[ov[j]] = b[ov[j]] #initialize solution value
+        x[ov[j]] = c[ov[j]] #initialize solution value
         for k in range(mmo,j,-1):
             #group known terms in numerator
             x[ov[j]] = x[ov[j]] - x[ov[k]]*lu[ov[j],k] 
