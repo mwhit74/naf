@@ -475,8 +475,10 @@ def gecr(a, pivot=True):
                     new_pvt_row = i
                     
             if new_pvt_row != None and new_pvt_row != org_pvt_row:
-                ov[org_pvt_row] = new_pvt_row
-                ov[new_pvt_row] = org_pvt_row
+                temp_org_pvt_row = ov[org_pvt_row]
+                temp_new_pvt_row = ov[new_pvt_row]
+                ov[org_pvt_row] = temp_new_pvt_row
+                ov[new_pvt_row] = temp_org_pvt_row
                 
         #checking for no solutions, more unknowns than equations,
         #linear dependence, a singular matrix
