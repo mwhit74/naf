@@ -78,10 +78,11 @@ def gedo(a, pivot=True):
     
     #row reduction
     for j in range(0,n):
+        pdb.set_trace()
         if pivot:
             pvt = abs(a[ov[j],j]) #gets current pvt on diagonal
-            new_pvt_row = None
-            org_pvt_row = j #keeps track of row location of pvt
+            new_pvt_row_index = None
+            org_pvt_row_index = j #keeps track of org pivot row index location
         
             #cycle thru entries in first column
             #find largest value
@@ -89,15 +90,15 @@ def gedo(a, pivot=True):
             for i in range(j+1,n):
                 if abs(a[ov[i],j]) > pvt:
                     pvt = abs(a[ov[i],j])
-                    new_pvt_row = i
+                    new_pvt_row_index = i #keeps track of new pivot row index location
         
             #switch largest value to be pivot
             #this reduces rounding error
-            if (new_pvt_row != None and org_pvt_row != new_pvt_row):
-                temp_org_pvt_row = ov[org_pvt_row]
-                temp_new_pvt_row = ov[new_pvt_row]
-                ov[org_pvt_row] = temp_new_pvt_row
-                ov[new_pvt_row] = temp_org_pvt_row
+            if (new_pvt_row_index != None and org_pvt_row_index != new_pvt_row_index):
+                org_pvt_row_num = ov[org_pvt_row_index] #resolves index to actual row number
+                new_pvt_row_num = ov[new_pvt_row_index]
+                ov[org_pvt_row_index] = new_pvt_row_num #assigns actual row number to new index location
+                ov[new_pvt_row_index] = org_pvt_row_num
             
         #checking for no solutions, more unknowns than equations,
         #linear dependence, a singular matrix
@@ -465,20 +466,25 @@ def gecr(a, pivot=True):
     for j in range(0,n):
         #partial pivot of rows
         if pivot:
-            pvt = abs(a[ov[j], j])
-            new_pvt_row = None
-            org_pvt_row = j
-            
-            for i in range(j+1, n):
+            pvt = abs(a[ov[j],j]) #gets current pvt on diagonal
+            new_pvt_row_index = None
+            org_pvt_row_index = j #keeps track of row location of pvt
+        
+            #cycle thru entries in first column
+            #find largest value
+            #aka finding the max pivot
+            for i in range(j+1,n):
                 if abs(a[ov[i],j]) > pvt:
-                    pvt = a[ov[i], j]
-                    new_pvt_row = i
-                    
-            if new_pvt_row != None and new_pvt_row != org_pvt_row:
-                temp_org_pvt_row = ov[org_pvt_row]
-                temp_new_pvt_row = ov[new_pvt_row]
-                ov[org_pvt_row] = temp_new_pvt_row
-                ov[new_pvt_row] = temp_org_pvt_row
+                    pvt = abs(a[ov[i],j])
+                    new_pvt_row_index = i
+        
+            #switch largest value to be pivot
+            #this reduces rounding error
+            if (new_pvt_row_index != None and org_pvt_row_index != new_pvt_row_index):
+                org_pvt_row_num = ov[org_pvt_row_index]
+                new_pvt_row_num = ov[new_pvt_row_index]
+                ov[org_pvt_row_index] = new_pvt_row_num
+                ov[new_pvt_row_index] = org_pvt_row_num
                 
         #checking for no solutions, more unknowns than equations,
         #linear dependence, a singular matrix
