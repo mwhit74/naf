@@ -484,11 +484,11 @@ def gecr(a, pivot=True):
                 
         #checking for no solutions, more unknowns than equations,
         #linear dependence, a singular matrix
-        if np.isclose(a[ov[j], j],0.0):
-            msg = ('Value approx. zero on diagonal; matrix is at least '
+        if np.isclose(a[ov[j], j],0.0, atol=1e-03):
+            msg = ('Approximate zero value on diagonal; matrix is at least '
                    'unstable and could be singular or could have '
                    'an infinite number of solutions')
-            raise Exception(msg)
+            warn(msg)
                 
         if j == 0:
             #loop not necessary if in-place storage is used
