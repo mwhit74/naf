@@ -56,7 +56,7 @@ def gedo(a, pivot=True):
     Raises
     ------
     Exception
-        None invertible matrix. Could be not square or non-singular. 
+        Non-invertible matrix. Could be not square or singular. 
     
     Returns
     -------
@@ -78,7 +78,6 @@ def gedo(a, pivot=True):
     
     #row reduction
     for j in range(0,n):
-        pdb.set_trace()
         if pivot:
             pvt = abs(a[ov[j],j]) #gets current pvt on diagonal
             new_pvt_row_index = None
@@ -102,7 +101,7 @@ def gedo(a, pivot=True):
             
         #checking for no solutions, more unknowns than equations,
         #linear dependence, a singular matrix
-        if np.isclose(a[ov[j], j],0.0):
+        if np.isclose(a[ov[j], j],0.0, atol=1e-03):
             msg = ('Approximate zero value on diagonal; matrix is at least '
                    'unstable and could be singular or could have '
                    'an infinite number of solutions')
@@ -234,10 +233,7 @@ def dosv(lu, ov, b):
     return x 
 
 
-def det(a):
-    
-    #compute matrix LU decomposition
-    lu, ov = gedo(a)
+def det(lu, ov):
     
     m,n = lu.shape
         
@@ -443,7 +439,7 @@ def gecr(a, pivot=True):
     Raises
     ------
     Exception
-        None invertible matrix. Could be not square or non-singular. 
+        Non-invertible matrix. Could be not square or singular. 
     
     Returns
     -------
