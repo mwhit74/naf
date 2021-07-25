@@ -330,7 +330,7 @@ def newtona():
 
 
 
-def newton_e(fnc, dfnc, x0, root_tol=0.0001, zero_tol=0.0001, max_iter=20, 
+def newtone(fnc, dfnc, x0, root_tol=0.0001, zero_tol=0.0001, max_iter=20, 
             verbose=False):
     """Newton's method using exact derivative provided by user.
     
@@ -731,21 +731,27 @@ def ndpnm(pc, x, root_tol=0.0001, max_iter=20):
 
     Returns
     -------
+    tuple(cur_x, dpc, num_iter)
+
+    cur_x : float
+        a root of the polynomial equation
     dpc : list
           polynomial coefficients of defleated polynomial in order of increasing
           power
-    cur_x : float
-        a root of the polynomial equation
+    num_iter : int
+        number of iterations required to reach solution
         
     Usage Notes
     -----------
     #a0, a(0+1), a(0+2), ..., a(n)
     #3rd degree polynomial
+    f(x) = x^3-8x^2-7x+110
     pc = np.array([110, -7, -8, 1]) #coefficients in reverse order
-    guess_x = 4
+    guess_x = 4.0
+    root_tol = 0.0001
     max_iter = 20
     
-    dpc, x = ndpnm(f, guess_x, 0.0001, 20)
+    dpc, x = ndpnm(f, guess_x, root_tol, max_iter)
     x1, x2 = quadratic_roots(g)
     
     print(x, x1, x2)
