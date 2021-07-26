@@ -28,8 +28,6 @@ bs - back substitution
 
 
 
-
-
 def gedo(a, pivot=True):
     """Generic square matrix LU Decomposition using Doolittle algorithm with
     partial pivoting.
@@ -109,7 +107,11 @@ def gedo(a, pivot=True):
     
         #calculates multipliers for row reduction
         for i in range(j+1,n):
-            a[ov[i],j] = a[ov[i],j]/a[ov[j],j]
+            try:
+                a[ov[i],j] = a[ov[i],j]/a[ov[j],j]
+            except ZeroDivisionError as e:
+                print("Division by zero error: zero encounter on diagonal, matrix is singular")
+                sys.exit()
 
     
         #creates zeros below the main diagonal
@@ -198,7 +200,7 @@ def dobs(lu, ov, c):
         x[ov[j]] = c[ov[j]] #initialize solution value
         for k in range(mmo,j,-1):
             #group known terms in numerator
-            x[ov[j]] = x[ov[j]] - x[ov[k]]*lu[ov[j],k] 
+            x[ov[j]] = x[ov[j]] - x[ov[k]]*lu[ov[j],k]
         x[ov[j]] = x[ov[j]]/lu[ov[j],j] #solving equation by division
     
     return x
@@ -256,6 +258,56 @@ def det(lu, ov):
         det = -1*det
         
     return det
+
+
+
+
+
+
+
+#####################
+# FULL INVERSE
+#####################
+
+
+
+
+def invr(lu, ov):
+    """Uses Doolittle reduction algorithm to compute matrix inverse.
+
+    Solves the LU-decomposition matrix using the Doolittle algorithm. Then,
+    successively solves with forward and back substitution each column
+    of the idetity matrix. This results in the inverse of the matrix.
+
+    Parameters
+    ----------
+    lu : 2D numpy array
+         matrix decomposed into upper and lower operation coefficients for
+         forward and back substitution
+    ov : 1D numpy arry
+         row order vector; keeps track of the reordering due to 
+         partial pivoting of the rows
+
+    Returns
+    -------
+    inverse : 2D numpy array
+        the inverted matrix of matrix 'a'        
+    """
+    
+    n,m = lu.shape
+    iden = np.identity(n, dtype=float)
+    inverse = np.empty((n,m),dtype=float)
+
+    i = 0
+    for col in iden.T:
+        x = dosv(lu, ov, col)
+        inverse[:,i] = x
+        i += 1
+
+    return inverse
+
+
+
 
 
 
@@ -413,7 +465,6 @@ def tdsv(lu, b):
     c = tdfe(lu, b)
     x = tdbs(lu, c)
     return x 
-
 
 
 
@@ -637,6 +688,11 @@ def crsv(lu, ov, b):
 #########################
 
 
+#################################
+# Solution for linear equations
+#################################
+
+
 
 
 def ddm(a):
@@ -733,9 +789,9 @@ def geji(a, x1, b, tol = 0.0001, max_iter = 50):
     Raises
     ------
     Exception1 - non-square matrix
-        Forwards exception from ddm function
+        Raises exception from ddm function
     Exception2 - non-diagonally dominate matrix
-        Forwards exception from ddm function
+        Raises exception from ddm function
 
     Returns
     -------
@@ -882,7 +938,7 @@ def gegs(a, x1, b, w=1.0, tol = 0.0001, max_iter = 50):
                         x1[i] = x1[i] - a[i,j]*x0[j]
                     else:
                         x1[i] = x1[i] - a[i,j]*x1[j]
-        
+
         verror = np.absolute(np.subtract(x1, x0))
         
         num_iter += 1
@@ -896,3 +952,203 @@ def gegs(a, x1, b, w=1.0, tol = 0.0001, max_iter = 50):
                     
     return x1, verror, num_iter
 
+
+
+
+
+
+######################################
+# Solutions for nonlinear equations
+#####################################
+
+
+
+def newton_soe(x0, a_m, b_m, tol= 0.0001, max_iter=20, verbose=False):
+    """Netwon's method applied for a system of nonlinear equations
+    
+    Parameters:
+    -----------
+    x0 : 1D numpy array
+        initial estimate of solution vector
+    a_m : function
+        function that accepts 1D numpy array of the approx. solution vector
+        and returns the Jacobian matrix of the funcitons (a 2D numpy array 
+        of the partial derivatives evaluated at the approx. solution vector)
+    b_v : function
+        function that accepts 1D numpy array of the approx. solution vector
+        and returns a 2D numpy array of the functions evaluated at the approx.
+        solution vector)
+    tol : float, optional
+        convergence tolerance. The default is 0.0001
+    max_iter : integer, optional
+        maximum number of iterations to perform if the solution is not converging.
+        The default is 20.
+    verbose : bool, optional
+        outputs a summary of the solution progression at each solution step
+        The default is False
+        
+    Returns:
+    --------
+    x0 : 1D numpy array
+        approx. solution to the system within the specified tolerance
+    dx : 1D numpy array
+        solution error w.r.t. the previous approx. solution
+    num_iter : integer
+        number of iterations required to converge.
+        
+    Notes:
+    ------
+    Example a_m function:
+    
+    def a_m(z):
+        x = z[0]
+        y = z[1]
+
+        dxf1 = lambda x,y: 2.0*x + 1.0
+        dyf1 = lambda x,y: -2.0*y
+        dxf2 = lambda x,y: -2.0*x*math.cos(math.pow(x,2))
+        dyf2 = lambda x,y: 1.0
+
+        return np.array([[dxf1(x,y),dyf1(x,y)],[dxf2(x,y),dyf2(x,y)]])
+    
+    Example b_m function:
+    
+    def b_v(z):
+        x = z[0]
+        y = z[1]
+
+        f1 = lambda x,y: math.pow(x,2) + x - math.pow(y,2) - 1
+        f2 = lambda x,y: y - math.sin(math.pow(x,2))
+        return np.array([f1(x,y),f2(x,y)])   
+    """
+
+    num_eqs = np.size(x0)
+    tol = np.full(num_eqs, 0.0001)
+    dx = tol*10
+    num_iter = 0
+    max_iter = 20
+
+    while np.all(abs(dx)>tol) and num_iter < max_iter:
+        a = a_m(x0)
+
+        b = -1*b_v(x0)
+
+        lu, ov = gedo(a)
+        dx = dosv(lu, ov, b)[ov]
+
+        x0 = x0 + dx
+        num_iter += 1
+
+        if verbose:
+            print(f'a: {a}')
+            print(f'b: {b}')
+            print(f'lu,ov: {lu},{ov}')
+            print(f'dx: {dx}')
+            print(f'x0: {x0}')
+            print(f'num_iter: {num_iter}')
+            print('\n')
+                
+    return x0, dx, num_iter
+
+def newton_soem(x0, a_m, b_m, num_eqs, n, tol= 0.0001, max_iter=20, verbose=False):
+    """Modified Newton's method applied to a system of nonlinear equations
+    
+    The modification in the solution routine is not updating the Jacobian matrix
+    of partials with each iteration. Instead the same Jacobian is used to without
+    update with the new approximate solution. The Jacobian is updated after n
+    iterations with the first Jacobian. Using the same Jacobian for multiple 
+    iteration steps saves on re-evaluation the potentially large number of 
+    functions in the Jacobian matrix. This is a trade off with the number of 
+    steps required to converage.
+    
+    Parameters:
+    -----------
+    x0 : 1D numpy array
+        initial estimate of solution vector
+    a_m : function
+        function that accepts 1D numpy array of the approx. solution vector
+        and returns the Jacobian matrix of the funcitons (a 2D numpy array 
+        of the partial derivatives evaluated at the approx. solution vector)
+    b_v : function
+        function that accepts 1D numpy array of the approx. solution vector
+        and returns a 2D numpy array of the functions evaluated at the approx.
+        solution vector)
+    num_eqs : integer
+        number of equations in the system
+    n : integer
+        number of iterations to use the same Jacobian w/o update (a good starting
+        point is the number of functions in the system)
+    tol : float, optional
+        convergence tolerance. The default is 0.0001
+    max_iter : integer, optional
+        maximum number of iterations to perform if the solution is not converging.
+        The default is 20.
+    verbose : bool, optional
+        outputs a summary of the solution progression at each solution step.
+        The default is False.
+        
+    Returns:
+    --------
+    x0 : 1D numpy array
+        approx. solution to the system within the specified tolerance
+    dx : 1D numpy array
+        solution error w.r.t. the previous approx. solution
+    num_iter : integer
+        number of iterations required to converge.
+        
+    Notes:
+    ------
+    Example a_m function:
+    
+    def a_m(z):
+        x = z[0]
+        y = z[1]
+
+        dxf1 = lambda x,y: 2.0*x + 1.0
+        dyf1 = lambda x,y: -2.0*y
+        dxf2 = lambda x,y: -2.0*x*math.cos(math.pow(x,2))
+        dyf2 = lambda x,y: 1.0
+
+        return np.array([[dxf1(x,y),dyf1(x,y)],[dxf2(x,y),dyf2(x,y)]])
+    
+    Example b_m function:
+    
+    def b_v(z):
+        x = z[0]
+        y = z[1]
+
+        f1 = lambda x,y: math.pow(x,2) + x - math.pow(y,2) - 1
+        f2 = lambda x,y: y - math.sin(math.pow(x,2))
+        return np.array([f1(x,y),f2(x,y)])   
+    """
+    
+    tol = np.full(num_eqs, 0.0001)
+    dx = tol*10
+    num_iter = 0
+    max_iter = 20
+
+    while np.all(abs(dx)>tol) and num_iter < max_iter:
+        a = a_m(x0)
+        i = 0
+        
+        while np.all(abs(dx)>tol) and i < n and num_iter < max_iter:
+            b = -1*b_v(x0)
+
+            lu, ov = gedo(a)
+            dx = dosv(lu, ov, b)[ov]
+
+            x0 = x0 + dx
+            
+            i += 1
+            num_iter += 1
+
+            if verbose:
+                print(f'a: {a}')
+                print(f'b: {b}')
+                print(f'lu,ov: {lu},{ov}')
+                print(f'dx: {dx}')
+                print(f'x0: {x0}')
+                print(f'num_iter: {num_iter}')
+                print('\n')
+
+    return x0, dx, num_iter
