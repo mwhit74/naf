@@ -23,11 +23,13 @@ def lag_poly(pts, n, x):
     n : integer
         degree of polynomial to be constructed
 
+    x : float
+        corresponding value for which to interpolate
+
     Returns:
     --------
-    pc : 1D numpy array
-        array of polynomial coefficients in ascending order 
-        [a0, a1, a2, ... , an]
+    y : float
+        interpolated valued corresponding to x
 
     Raises:
     -------
@@ -42,9 +44,10 @@ def lag_poly(pts, n, x):
     from naf.incf import lag_poly
 
     pts = np.array([[-2.3,2.1],[0.5,-1.3],[3.1,4.2]])
+    x = np.linspace(-10,10)
 
-    fp = partial(lag_poly, pts)
-    f = list(map(fp,r))
+    fp = partial(lag_poly, pts, n)
+    f = list(map(fp,x))
 
 
     Usage 2: generate single values
@@ -56,7 +59,7 @@ def lag_poly(pts, n, x):
 
     x = -1.0
 
-    f = lag_poly(pts, x)
+    f = lag_poly(pts, n, x)
 
     """
 
@@ -67,11 +70,11 @@ def lag_poly(pts, n, x):
     #check for divide by zero
 
     f = 0.0
-    num_pts = len(pts[1]) + 1
+    npc = n + 1 #number of points considered in interpolate
 
-    for i in range(num_pts):
+    for i in range(npc):
         p = 1.0
-        for j in range(num_pts):
+        for j in range(npc):
             if i != j:
                 p = p*(x - pts[j,0])/(pts[i,0] - pts[j,0])
         f = f + p*pts[i,1]
