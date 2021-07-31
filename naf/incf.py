@@ -8,7 +8,7 @@ that model sets of emperical data.
 
 import numpy as np
 
-def lag_poly(pts, x):
+def lag_poly(pts, n, x):
     """Lagrangian polynomial method
 
     Uses the Lagrangian polynomial method to create a polynomial that 
@@ -60,7 +60,7 @@ def lag_poly(pts, x):
 
     """
 
-    if n > len(pts[1]) - 1:
+    if n < len(pts[1]) - 1:
         raise ValueError("Not enough points for specified polynomial degree.")
 
     #check for duplicate points
