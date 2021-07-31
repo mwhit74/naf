@@ -60,7 +60,7 @@ def lag_poly(pts, x):
 
     """
 
-    if n < len(pts[1]) - 1:
+    if n > len(pts[1]) - 1:
         raise ValueError("Not enough points for specified polynomial degree.")
 
     #check for duplicate points
@@ -77,3 +77,5 @@ def lag_poly(pts, x):
         f = f + p*pts[i,1]
 
     return f
+
+
