@@ -8,7 +8,7 @@ that model sets of emperical data.
 
 import numpy as np
 
-def lag_poly(pts, n, x):
+def lagrangian_poly(pts, n, x):
     """Lagrangian polynomial method
 
     Uses the Lagrangian polynomial method to create a polynomial that 
@@ -82,3 +82,70 @@ def lag_poly(pts, n, x):
     return f
 
 
+
+
+
+def neville_poly(pts, x):
+    """Neville's Method for polynomial interpolation
+
+
+
+    Parameters:
+    -----------
+    pts : 2D numpy array
+        array of (x,y) coordinate pairs to be used in the
+        polynomial interpolation
+    x : float
+        corresponding value for which to interolate    
+
+    Returns:
+    --------
+    p : n-D numpy array
+        an n x n dimensional array of the original x and y coordinates
+        sorted ascending by the difference between x coordinates and the
+        x interpolate with the interpolation table appended
+        [x-coordinates, y-coordinates, p[i,1], p[i,2], ..., p[i,n]]
+
+    Raises:
+    -------
+
+    Notes:
+    ------
+
+    Examples:
+    ---------
+    pts = np.array([[10.1,0.17531],[22.2,0.37784],[32.0,0.52992],[41.6,0.66393],[50.5,0.63608]])
+
+    tb = neville_poly(pts, 27.5)
+
+    print(tb)
+
+    [[0.52992 0.46009 0.462   0.46174 0.45754]
+     [0.37784 0.456   0.46072 0.47902 0.     ]
+     [0.66393 0.44521 0.55842 0.      0.     ]
+     [0.17531 0.37376 0.      0.      0.     ]
+     [0.63608 0.      0.      0.      0.     ]]
+    """
+
+    n = pts.shape[0]
+    diff = abs(x - pts[...,0])
+    id_sort = np.argsort(diff,0)
+    pts = pts[id_sort]
+    xr = pts[...,0]
+    yr = pts[...,1]
+
+    p = np.zeros(shape=(n,n))
+    p[...,0] = yr
+
+    #moves down columns and then across rows
+    #column j and then down the rows i 
+    for j in range(1,n):
+        for i in range(n):
+            if i+j >= n:
+                p[i,j] = 0.0
+            else:
+                p[i,j] = ((x - xr[i])*p[i+1,j-1] + (xr[i+j] - x)*p[i,j-1])/(xr[i+j] - xr[i])
+            
+    p = np.column_stack((xr, p))
+    
+    return p
