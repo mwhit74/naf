@@ -100,7 +100,7 @@ def neville_poly(pts, x):
 
     Returns:
     --------
-    p : n-D numpy array
+    tb : n-D numpy array
         an n x n dimensional array of the original x and y coordinates
         sorted ascending by the difference between x coordinates and the
         x interpolate with the interpolation table appended
@@ -134,18 +134,19 @@ def neville_poly(pts, x):
     xr = pts[...,0]
     yr = pts[...,1]
 
-    p = np.zeros(shape=(n,n))
-    p[...,0] = yr
+    tb = np.zeros(shape=(n,n))
+    tb[...,0] = yr
 
     #moves down columns and then across rows
     #column j and then down the rows i 
     for j in range(1,n):
         for i in range(n):
             if i+j >= n:
-                p[i,j] = 0.0
+                tb[i,j] = 0.0
             else:
-                p[i,j] = ((x - xr[i])*p[i+1,j-1] + (xr[i+j] - x)*p[i,j-1])/(xr[i+j] - xr[i])
+                tb[i,j] = ((x - xr[i])*tb[i+1,j-1] + (xr[i+j] - x)*tb[i,j-1])/(xr[i+j] - xr[i])
             
-    p = np.column_stack((xr, p))
+    tb = np.column_stack((xr, tb))
     
-    return p
+    return tb 
+
