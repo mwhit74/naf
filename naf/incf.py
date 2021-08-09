@@ -11,8 +11,8 @@ import numpy as np
 def lagrangian_poly(pts, n, x):
     """Lagrangian polynomial method
 
-    Uses the Lagrangian polynomial method to create a polynomial that 
-    passes to the given coordinate points.
+    Uses the Lagrangian polynomial method to compute an interpolated valued
+    corresponding to the x-value.
 
     Parameters:
     -----------
@@ -150,3 +150,108 @@ def neville_poly(pts, x):
     
     return tb 
 
+
+
+
+
+
+def div_diff_tb(pts):
+    """Computes the divided difference table of a point set
+
+    Parameters:
+    ----------
+    pts : 2D numpy array
+        array of (x,y) coordinate pairs to be used in the
+        divided difference table
+
+    Returns:
+    --------
+    tb : n-D numpy array
+        an n x n dimensional array of the divided differences
+        starting with the zero-order difference
+
+    Raises:
+    -------
+
+    Notes:
+    ------
+
+    Examples:
+    ---------
+   """ 
+    n = pts.shape[0]
+    xr = pts[...,0]
+    yr = pts[...,1]
+    
+    tb = np.zeros((n,n))
+    tb[...,0] = yr
+    
+    for j in range(1,n):
+        for i in range(0,n-j):
+            tb[i,j] = (tb[i+1,j-1] - tb[i,j-1])/(xr[j+i] - xr[i])
+            
+    return tb
+
+
+
+
+
+
+
+def dd_eval(f, xr, x, n):
+    """Polynomial evaluation from divided difference table
+    
+    Uses nested multiplication to evaluate the polynomial approximated
+    by the divided difference method. 
+    
+    Parameters:
+    -----------
+    f : 1D numpy array
+        array of divided differences from divided difference table
+    xr : 1D numpy array
+        corresponding array of x-values from divided difference table
+    x : float
+        value for which to interpolate
+    n : interger
+        degree of polynomial for interpolation
+        
+    Returns:
+    --------
+    y : float
+        interpolated value
+        
+    Raises:
+    -------
+    
+    Notes:
+    ------
+    
+    Examples:
+    ---------
+    Interpolating the value of the function f(x) = exp(x) at x=0.2 given 
+    three points below. 
+    
+    pts = np.array([[0,1],[0.1,1.1052],[0.3,1.3499]])
+    tb = div_diff_tb(pts)
+    
+    x = 0.2
+    f = tb[0]
+    xr = pts[...,0]
+    n = 2
+    
+    y_interpolate = dd_eval(f, xr, x, n)
+    
+    print(y_interpolate)
+    
+    >>>1.2218333333333333
+    
+    """
+    
+    y = 0.0
+    
+    for i in range(n,0,-1):
+        y = (y + f[i])*(x-xr[i-1])
+        
+    y = y + f[0]
+    
+    return y
