@@ -198,7 +198,7 @@ def div_diff_tb(pts):
 
 
 
-def dd_eval(f, xr, x, n):
+def dd_poly(f, xr, x, n):
     """Polynomial evaluation from divided difference table
     
     Uses nested multiplication to evaluate the polynomial approximated
