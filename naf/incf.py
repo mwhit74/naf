@@ -155,7 +155,7 @@ def neville_poly(pts, x):
 
 
 
-def div_diff_tb(pts):
+def dd_tb(pts):
     """Computes the divided difference table of a point set
 
     Parameters:
