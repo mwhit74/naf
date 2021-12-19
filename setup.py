@@ -6,5 +6,7 @@ setup(name='naf',
       url='https://github.com/mwhit74/naf',
       author='MLW',
       license='MIT',
-      packages=['naf.linalg','naf.nonlin'],
+      packages=['naf'],
       zip_safe=False)
+
+#'naf.linalg','naf.nonlin','naf.incf'
