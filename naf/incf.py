@@ -8,6 +8,7 @@ that model sets of emperical data.
 
 import numpy as np
 import math
+from naf import linalg
 
 def lagrangian_poly(pts, n, x):
     """Lagrangian polynomial method
@@ -152,7 +153,9 @@ def neville_poly(pts, x):
     return tb 
 
 
-
+############################################
+# Divided Differences Polynomial Evaluation
+############################################
 
 
 
@@ -278,6 +281,9 @@ def dd_poly(f, xr, x, n):
     return y
 
 
+#############################################
+# Ordinary Differences Polynomial Evaluation
+#############################################
 
 
 
@@ -526,3 +532,326 @@ def newton_gregory_poly(xi,x,h,n,i,f):
     p = p + od_value(f,0,i)
 
     return p
+
+
+
+#################################
+# Cubic Spline Interpolation
+#################################
+
+
+
+def c_h(x):
+    """Compute array of h-values.
+    
+    Parameters
+    ----------
+    x : 1D numpy array, float
+        array of x-values of defined points
+        
+    Returns
+    -------
+    h : 1D numpy array, float
+        the differences between successive defined points
+    """
+    n = x.size - 1
+    h = np.zeros(n)
+    for i in range(n):
+        h[i] = x[i+1] - x[i]
+    
+    return h
+
+def cubic_spline_coeff_matrix(x, h, end_condition):
+    """Assemble the tri-diagonal coefficient matrix for cubic splines.
+
+    Parameters:
+    -----------
+    x : 1D numpy array, float
+        array of x-values of defined points
+    end_condition : integer
+        integer from 1 to 4 indicating the end condition to be used
+        1 - cubic spline approach linearity at ends, S0 = 0 and Sn = 0
+        2 - end slopes forced to specific values A and B
+        3 - cubic spline approach parbolas at ends, S0=S1 and Sn = Sn-1
+        4 - extrapolates S0 from S1 and S2, and Sn-2 from Sn-1 and Sn;
+            spline match f(x) exactly if f(x) is a cubic
+
+    Returns:
+    --------
+    csm : 2D numpy array, float
+        tri-daigonal matrix of coefficients for cubic spline
+
+    """
+
+    n = x.size - 1
+
+    if end_condition == 1:
+        c1 = 2*(h[0] + h[1])
+        c2 = h[1]
+        c3 = h[n-2]
+        c4 = 2*(h[n-2] + h[n-1])
+    if end_condition == 2:
+        c1 = 2*h[0]
+        c2 = h[0]
+        c3 = h[n-1]
+        c4 = 2*h[n-1]
+    if end_condition == 3:
+        c1 = 3*h[0] + 2*h[1]
+        c2 = h[1]
+        c3 = h[n-2]
+        c4 = 2*h[n-2] + 3*h[n-1]
+    if end_condition == 4:
+        c1 = ((h[0] + h[1])*(h[0] + 2*h[1]))/h[1]
+        c2 = (h[1]**2 - h[0]**2)/h[1]
+        c3 = (h[n-2]**2 - h[n-1]**2)/h[n-2]
+        c4 = ((h[n-1] + h[n-2])*(h[n-1] + 2*h[n-2]))/h[n-2]
+
+    if end_condition in (1,3,4):
+        csm = np.zeros((n-1,3))
+        for i in range(n-1):
+            if i == 0:
+                csm[i][0] = 0.0
+                csm[i][1] = c1
+                csm[i][2] = c2
+            elif i == n-2:
+                csm[i][0] = c3
+                csm[i][1] = c4
+                csm[i][2] = 0.0
+            else:
+                csm[i][0] = h[i]
+                csm[i][1] = 2*(h[i] + h[i+1])
+                csm[i][2] = h[i+1]
+    elif end_condition == 2:
+        csm = np.zeros((n+1,3))
+        
+        csm[0][0] = 0.0
+        csm[0][1] = c1
+        csm[0][2] = c2
+        
+        for i in range(0,n-1):
+            csm[i+1][0] = h[i]
+            csm[i+1][1] = 2*(h[i] + h[i+1])
+            csm[i+1][2] = h[i+1]
+                
+        csm[n][0] = c3
+        csm[n][1] = c4
+        csm[n][2] = 0.0
+
+    return csm
+
+def cubic_spline_vector(pts, h, end_condition, A=0, B=0):
+    """Assemble cubic spline right-hand side vector.
+    
+    Parameters:
+    -----------
+    pts : 2D numpy array, float
+        array of xy coordinate pairs to be fitted
+    end_condition : integer
+        integer from 1 to 4 indicating the end condition to be used
+        1 - cubic spline approach linearity at ends, S0 = 0 and Sn = 0
+        2 - end slopes forced to specific values A and B
+        3 - cubic spline approach parbolas at ends, S0=S1 and Sn = Sn-1
+        4 - extrapolates S0 from S1 and S2, and Sn-2 from Sn-1 and Sn;
+            spline match f(x) exactly if f(x) is a cubic
+    A (optional) : float
+        slope at beginning of spline
+    B (optional) : float
+        slope at end of spline
+        
+    Returns:
+    --------
+    b : 1D numpy array, float
+        array of values for right-hand side
+        
+    """
+    x = pts[...,0]
+    y = pts[...,1]
+    
+    n = x.size - 1
+    
+    if end_condition != 2:
+        b = np.zeros(n-1)
+
+        #watch the indexing of b, need to offset to the prior index
+        for i in range(1,n):
+            b[i-1] = 6*((y[i+1]-y[i])/h[i] - (y[i]-y[i-1])/h[i-1])
+            
+    if end_condition == 2: 
+        b = np.zeros(n+1)
+        
+        b[0] = 6*((y[1]-y[0])/h[0] - A)
+
+        for i in range(1,n):
+            b[i] = 6*((y[i+1]-y[i])/h[i] - (y[i]-y[i-1])/h[i-1])
+            
+        b[n] = 6*((y[n]-y[n-1])/h[n-1] - B)
+        
+    return b
+
+def solve_s_vector(csm, h, b, end_condition):
+    """Solves for the S-vector and adds correct end conditions.
+    
+    Parameters
+    ----------
+    csm : 2D numpy array, float
+        tridiagonal matrix of cubic spline coefficients
+    b : 1D numpy array, float
+        right-hand side vector
+    end_condition : integer
+        integer from 1 to 4 indicating the end condition to be used
+        1 - cubic spline approach linearity at ends, S0 = 0 and Sn = 0
+        2 - end slopes forced to specific values A and B
+        3 - cubic spline approach parbolas at ends, S0=S1 and Sn = Sn-1
+        4 - extrapolates S0 from S1 and S2, and Sn-2 from Sn-1 and Sn;
+            spline match f(x) exactly if f(x) is a cubic
+            
+    Returns
+    -------
+    s : 1D numpy array, float
+        S-value solution array
+        
+    """
+    s = linalg.tdqsv(csm, b)
+    
+    if end_condition == 1:
+        s = np.insert(s, 0, 0)
+        s = np.append(s, 0)
+    if end_condition == 2:
+        pass
+    if end_condition == 3:
+        s = np.insert(s, 0, s[0])
+        s = np.append(s, s[-1])
+    if end_condition == 4:
+        #s[0] = S_1 and s[1] = S_2 due to indexing
+        s0 = ((h[0] + h[1])*s[0] - h[0]*s[1])/h[1]
+        #s[-1] = S_n-1 and s[-2] = S_n-2
+        sn = ((h[-2] + h[-1])*s[-1] - h[-1]*s[-2])/h[-2]
+        s = np.insert(s, 0, s0)
+        s = np.append(s, sn)
+        
+    return s
+
+def cubic_spline_poly_coeffs(s, y, h):
+    """Calculates the polynomial coefficients for each internal.
+    
+    Uses the S-vector to calculate the polynomial coefficients for each
+    interval.
+    
+    Parameters
+    ----------
+    s : 1D numpy array, float
+        S-value solution array
+    y : 1D numpy array, float
+        array of y-values of defined points
+        
+    Returns
+    -------
+    a, b, c, d : 2D numpy array, float
+        array of polynomial coefficients for each interval
+        
+    """   
+    k = s.size - 1
+    
+    a = np.zeros(k)
+    b = np.zeros(k)
+    c = np.zeros(k)
+    d = y[0:-1]
+    
+    for i in range(0,k):
+        a[i] = (s[i+1] - s[i])/(6*h[i])
+        b[i] = s[i]/2
+        c[i] = (y[i+1] - y[i])/h[i] - (2*h[i]*s[i] + h[i]*s[i+1])/6
+        
+    return np.array([a,b,c,d])
+
+def cubic_spline_interpolation(csc, ix, x):
+    """Performs an interpolation for a given x-value along the defined spline.
+    
+    Determines if the x-interpolate is in the defined range. Then, determines 
+    the interval where the x-interpolate is defined. Given the interval, the
+    polynomial coefficients for that interval are selected and used to 
+    interpolate the function value, iy, for the x-interpolate.
+    
+    Parameters
+    ----------
+    csc : 2D numpy array, float
+        array of polynomial coefficients for each interval
+    ix : float
+        x-interpolate value
+    x : 1D numpy array, float
+        array of x-values of defined points
+    
+    Returns
+    -------
+    iy : float
+        y-interpolate value
+    """
+    n = x.size - 1
+    
+    #check that ix is in the data range
+    ind = None
+    if ix >= x[0] and ix <= x[n]:
+        #find the interval for ix
+        for i in range(1,n+1):
+            if x[i] >= ix:
+                ind = i - 1
+                break
+    else:
+        raise ValueError("X-interpolation value outside range.")
+                
+    a = csc[0][ind]
+    b = csc[1][ind]
+    c = csc[2][ind]
+    d = csc[3][ind]
+    
+    #more computationally efficient way to write ax^3 + bx^2 + cx + d
+    x = ix - x[ind]
+    iy = ((x*a + b)*x + c)*x + d
+    
+    return iy
+    
+
+def csisv(ixv, pts, end_condition, A=0, B=0):
+    """Calculates the cubic spline and the y-interpolates.
+    
+    This function calculates the cubic spline polynomial coefficients
+    for each interval. Then, it calculates and returns an array of
+    y-interpolates for the given x-interpolates.
+    
+    Hint: It can be used for a single value by providing an array 
+    with one value. Note, it will return an array with one value.
+    
+    Paramaters
+    ----------
+    ixv : 1D numpy array, float
+        array of x-interpolate values
+    pts : 2D numpy array, float
+        array of defined xy points
+    end_condition : integer
+        integer from 1 to 4 indicating the end condition to be used
+        1 - cubic spline approach linearity at ends, S0 = 0 and Sn = 0
+        2 - end slopes forced to specific values A and B
+        3 - cubic spline approach parbolas at ends, S0=S1 and Sn = Sn-1
+        4 - extrapolates S0 from S1 and S2, and Sn-2 from Sn-1 and Sn;
+            spline match f(x) exactly if f(x) is a cubic
+    
+    Returns
+    -------
+    iyv : 1D nupy array, float
+        array of y-interpolate values
+    """
+    x = pts[...,0]
+    y = pts[...,1]
+    
+    h = c_h(x)
+        
+    csm = cubic_spline_coeff_matrix(x, h, end_condition)
+    b = cubic_spline_vector(pts, h, end_condition, A, B)
+    s = solve_s_vector(csm, h, b, end_condition)
+    csc = cubic_spline_poly_coeffs(s, y, h)
+    
+    iyv = np.empty(ixv.size)
+    for i in range(ixv.size):
+        iyv[i] = cubic_spline_interpolation(csc, ixv[i], x)
+    
+    return iyv
