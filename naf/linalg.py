@@ -209,6 +209,10 @@ def dobs(lu, ov, c):
 def dosv(lu, ov, b):
     """Doolittle reduction application of the forward elimination and back 
     substituation steps.
+
+    The idea of supplying the LU matrix and order vector is to allow for reuse
+    of these computationally intensive parts of the solution with multiple 
+    b-vectors easily. 
     
 
     Parameters
@@ -234,6 +238,29 @@ def dosv(lu, ov, b):
     x = dobs(lu, ov, c)
     return x 
 
+def doqsv(a, b):
+    """Quick solve using Doolittle reduction application. 
+
+    This does not save the LU decomposition for reuse. It simply solves
+    the system of equations and returns the solution vector.
+
+    Parameters
+    ----------
+    a : 2D numpy array 
+        an n x n matrix to be factored into LU
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+
+    Returns
+    -------
+    x : 1D numpy array
+        solution vector
+    """
+
+    lu, ov = gedo(a)
+    x = dosv(lu, ov, b)
+
+    return x
 
 def det(lu, ov):
     
@@ -465,6 +492,30 @@ def tdsv(lu, b):
     c = tdfe(lu, b)
     x = tdbs(lu, c)
     return x 
+
+def tdqsv(a,b):
+    """Quick solve tridiagonal matrix using Doolittle reduction application. 
+
+    This does not save the LU decomposition for reuse. It simply solves
+    the system of equations and returns the solution vector.
+
+    Parameters
+    ----------
+    a : 2D numpy array
+        n x 2 matrix which is a compressed form of a tridiagonal matrix
+    b : 1D numpy array
+        the right hand side; the constant values in the equations
+
+    Returns
+    -------
+    x : 1D numpy array
+        solution vector
+    """
+
+    lu = tddo(a)
+    x = tdsv(lu, b)
+
+    return x
 
 
 
