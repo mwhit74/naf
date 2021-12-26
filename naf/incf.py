@@ -684,7 +684,7 @@ def cubic_spline_vector(pts, h, end_condition, A=0, B=0):
         for i in range(1,n):
             b[i] = 6*((y[i+1]-y[i])/h[i] - (y[i]-y[i-1])/h[i-1])
             
-        b[n] = 6*((y[n]-y[n-1])/h[n-1] - B)
+        b[n] = 6*(B - (y[n]-y[n-1])/h[n-1])
         
     return b
 
