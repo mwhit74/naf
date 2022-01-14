@@ -912,7 +912,7 @@ def cubic_bspline_curve(pts):
 
     if m != 4:
         raise ValueError("Must provide exactly 4 knots for a cubic" +
-                "B-spline curve."
+                "B-spline curve.")
 
     
 
@@ -963,7 +963,7 @@ def cubic_bezier_curve(pts):
 
     if m != 4:
         raise ValueError("Must provide exactly 4 knots for a cubic" +
-                "Bezier curve."
+                "Bezier curve.")
 
     cbc = np.empty((101,2))
 
