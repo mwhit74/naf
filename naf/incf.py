@@ -855,3 +855,193 @@ def csisv(ixv, pts, end_condition, A=0, B=0):
         iyv[i] = cubic_spline_interpolation(csc, ixv[i], x)
     
     return iyv
+
+######################################
+# Spline Curves
+#####################################
+
+"""I plan to come back to this section and implement
+De Boor's Algorithm and De Casteljau's Algorithm.
+
+I also want to better understand the relationship
+between De Boor's and De Casteljau's but that is for
+another time. 
+
+I am going to implement a simplified function to 
+calculate points on a B-spline curve.
+"""
+
+
+def bezier_curve_dc(pts, n, np=101):
+    """Bezier curve using De Casteljau's algorithm
+
+    """
+
+def b_spline_db(pts, n, np=101):
+    """B-spline curve using De Borr's algorithm
+
+    """
+
+def cubic_bspline_curve(pts):
+    """Calculate cubic B-spline curve
+
+    Uses the points provided by the user as knots,
+    or control points, to calculate a cubic B-spline
+    curve.
+
+    Parameters
+    ----------
+    pts : nD numpy array, float
+        4 coordinate pairs of knots or control points
+
+    Returns
+    -------
+    cbc : nD numpy array, float
+        101 points defining the cubic B-spline curve
+
+    Note:
+    1. For splines with more than four control points. Enter successive
+        set of four points with the first and last point of each set
+        overlapping.
+    2. n is the number of columns in the pts array. E.g. 2 for (x,y)
+        coordindate points, 3 for (x,y,z) coordinate points.
+
+    """
+    m = pts.shape[0] #rows
+    n = pts.shape[1] #columns
+
+    if m != 4:
+        raise ValueError("Must provide exactly 4 knots for a cubic" +
+                "B-spline curve."
+
+    
+
+    cbc = np.empty((101,n))
+    
+    cm = np.array([[-1,3,-3,1],
+                   [3,-6,3,0],
+                   [-3,0,3,0],
+                   [1,4,1,0]])
+    
+    cpv = linalg.mmm(cm,pts)
+    
+    i = 0
+    for u in np.linspace(0,1,101):
+        uv = np.array([u**3,u**2,u,1])
+        cbc[i] = 1/6*linalg.mvm(cm, uv)
+        i+=1
+
+    return cbc
+
+def cubic_bezier_curve(pts):
+    """Calculate cubic Bezier curve
+
+    Uses the points provided by the user as knots,
+    or control points, to calculate a cubic Bezier
+    curve.
+
+    Parameters
+    ----------
+    pts : nD numpy array, float
+        4 coordinate pairs of knots or control points
+
+    Returns
+    -------
+    cbc : nD numpy array, float
+        101 points defining the cubic Bezier curve
+
+    Note:
+    1. For splines with more than four control points. Enter successive
+        set of four points with the first and last point of each set
+        overlapping.
+    2. n is the number of columns in the pts array. E.g. 2 for (x,y)
+        coordindate points, 3 for (x,y,z) coordinate points.
+
+    """
+    m = pts.shape[0] #rows
+    n = pts.shape[1] #columns
+
+    if m != 4:
+        raise ValueError("Must provide exactly 4 knots for a cubic" +
+                "Bezier curve."
+
+    cbc = np.empty((101,2))
+
+    cm = np.array([[-1,3,-3,1],
+                   [3,-6,3,0],
+                   [-3,3,0,0],
+                   [1,0,0,0]])
+
+    cpv = linalg.mmm(cm,pts)
+    
+    i = 0
+    for u in np.linspace(0,1,101):
+        uv = np.array([u**3,u**2,u,1])
+        cbc[i] = linalg.mvm(cpv, uv)
+        i+=1
+
+    return cbc
+
+def bezier_curve(pts, n, np=101):
+    """Points for n-degree Bezier curve using explicit algorithm
+
+    P(u) = sum(nCi*(1-u)^(n-i))*u^i*p_i) for i = 0 to n
+
+    Parameters
+    ----------
+    pts : 2D numpy array , float
+        array of control points for the Bezier curve, shape (n x 2)
+    n : integer
+        degree of Bezier polynomial to be used
+    np : integer
+        number of points to calculate along curve. Defaults to 101
+
+    Returns
+    -------
+    fp : 2D numpy array, float
+        np calculated points along Bezier curve, shape (np x 2)
+    """
+
+    nr = pts.size[0]
+    nc = pts.size[1]
+
+    if nc != 2:
+        raise ValueError("More columns than expected. Shape should be n x 2.")
+    
+    if nr != n+1:
+        raise ValueError("The number of points is not compatible with the" +
+                "polynomial degree.")
+
+    x = pts[...,0]
+    y = pts[...,1]
+
+    fp = np.empty((np,2)) #function points
+    uv = np.empty(n+1)
+    cm = np.zeros((n+1,n+1))
+
+    #nested binomial terms
+    for i in range(0,n+1):
+        a = math.factorial(n)/(math.factorial(i)*math.factorial(n-i))
+        for j in range(0, n-i+1):
+            c = n-i #power on interior binomial
+            
+            #second binomial term is (1-x)^c
+            #sign adjustment
+            sign = (-1)**c*(-1)**j
+ 
+            b = math.factorial(c)/(math.factorial(j)*math.factorial(c-j))
+            cm[i,j] = sign*a*b
+            
+    a = 0
+    for u in np.linspace(0,1,np):
+        for i in range(0,n+1):
+            uv[i] = u**(n-i) 
+
+        fp[a,0] = linalg.vvm(linalg.mvm(cm,uv),x)
+        fp[a,1] = linalg.vvm(linalg.mvm(cm,uv),y)
+        a += 1
+
+    return fp 
+
+
+
