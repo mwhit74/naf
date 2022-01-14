@@ -19,11 +19,307 @@ bs - back substitution
 
 """
 
+###############################
+# Basic Matrix Operations
+###############################
+
+"""
+Yes, I know about BLAS, LAPACK, and numpy.linalg. 
+
+A large part of this project is learning and the best way to learn
+is to implement your own stuff even if it is not the fastest. 
+
+Fast matrix-vector (or matrix-matrix) operations are, based on my 
+limited knowledge, low-level cache optimizations of the computer
+architecture. While I would love to learn how this works (and I plan
+to do so) I'll circle back to it later. For now a simple implementation
+will support my needs.
+
+https://en.wikipedia.org/wiki/Loop_nest_optimization
+https://en.wikipedia.org/wiki/Cache-oblivious_algorithm
+https://en.wikipedia.org/wiki/Matrix_multiplication_algorithm
+https://en.wikipedia.org/wiki/Transpose
+
+The Science of Programming Matrix Computations
+https://www.cs.utexas.edu/users/rvdg/tmp/TSoPMC.pdf
+"""
+
+def mt(a):
+    """Matrix transpose
+
+    https://en.wikipedia.org/wiki/Transpose
+
+    Parameters
+    ----------
+    a : 2D numpy array, float
+        matrix to on which to perform transpose
+
+    Returns
+    -------
+    a : 2D numpy array, float
+        transposed matrix
+    """
+    m = a.shape[0] #rows, zero-based max index
+    n = a.shape[1] #columns, zero-based max index
+
+    for i in range(0,m):
+        for j in range(0,n):
+            aij = a[i,j]
+            a[i,j] = a[j,i]
+            a[j,i] = aij
+
+    return a
+
+def vvm(va, vb):
+    """Vector-vector multiplication
+
+    Parameters
+    ----------
+    va : 1D numpy array, float
+        first vector to be multiplied
+    vb : 1D numpy array, float
+        second vector to be multiplied
+
+    Returns
+    -------
+    c : float
+        product of multiplied vectors
+    """
+
+    m = va.shape[0] #rows, zero-based max index
+    n = vb.shape[0] #columns, zero-based max index
+
+    if n != m:
+        raise ValueError("The vector-vector multiplication dimensions are incompatible.")
+
+    c = 0
+
+    for i in range(0,n):
+        c = c + va[i]*vb[i]
+
+    return c
+
+
+def mvm(a, v):
+    """Matrix-vector multiplication
+
+    Parameters
+    ----------
+    a : 2D numpy array, float
+        matrix to be multiplied
+    v : 1D numpy array, float
+        vector to be multiplied
+
+    Returns
+    -------
+    vc : 1D numpy array, float
+        resultant product vector
+
+    """
+
+    m = a.shape[0] #rows
+    n = a.shape[1] #columns
+    l = v.shape[0]
+
+    if m != l:
+        raise ValueError("The matrix-vector multiplication dimensions are incompatible.")
+
+    vc = np.empty(n)
+
+    for i in range(0,n):
+        s = 0
+        for j in range(0,m):
+            s = s + a[j,i]*v[j]
+        vc[i] = s
+
+    return vc
+
+def mvmb(a, v, bs):
+    """Matrix-vector multiplication with tiling
+
+    Parameters
+    ----------
+    a : 2D numpy array, float
+        matrix to be multiplied
+    v : 1D numpy array, float
+        vector to be multiplied
+    bs : integer, optional
+        block size for tiling 
+
+    Returns
+    -------
+    vc : 1D numpy array, float
+        resultant product vector
+
+    """
+    #zero-based max index
+    m = a.shape[0] #rows
+    n = a.shape[1] #columns
+    l = v.shape[0]
+
+    if m != l:
+        raise ValueError("The matrix-vector multiplication dimensions are incompatible.")
+
+    if bs <= 0:
+        raise ValueError("The block size must an integer greater than zero.")
+
+    vc = np.empty(n)
+
+    for i in range(0,n,bs):
+        s = 0
+        for j in range(0,m,bs):
+            for x in range(i,min(n,i+bs)):
+                for y in range(j,min(m,i+bs)):
+                    s = s + a[x,y]*v[y,j]
+                vc[x] = s
+
+    return vc
+
+#def mvmr(a, v):
+#    """Matrix-vector multiplication with recursion
+#
+#    Parameters
+#    ----------
+#    a : 2D numpy array, float
+#        matrix to be multiplied
+#    v : 1D numpy array, float
+#        vector to be multiplied
+#
+#    Returns
+#    -------
+#    vc : 1D numpy array, float
+#        resultant product vector
+#    """
+#
+#    #zero-based max index
+#    m = a.shape[0] #rows
+#    n = a.shape[1] #columns
+#    l = v.shape[0]
+#
+#    if n != l:
+#        raise("The matrix-vector multiplication dimensions are incompatible.")
+
+    
+
+def mmm(a, b):
+    """Matrix-matrix multiplication
+
+    Parameters
+    ----------
+    a : 2D numpy array, float
+        pre-matrix to be multiplied
+    b : 2D numpy array, float
+        post-matrix to be multiplied
+    s : integer, optional
+        block size for tiling. Defaults to 0 which translates to no
+        tiling
+
+    Returns
+    -------
+    c : 2D numpy array, float
+        resultant product matrix
+
+    """
+    #zero-based max index
+    m = a.shape[0] #rows
+    n = a.shape[1] #columns
+    v = b.shape[0] #rows
+    w = b.shape[1] #columns
+
+    if n != v:
+        raise ValueError("The matrix-matrix multiplication dimensions are incompatible.")
+
+    c = np.zeros((m,w))
+
+    for i in range(0,m):
+        for j in range(0,w):
+            s = 0
+            for k in range(0, n):
+                s = s + a[i,k]*b[k,j]
+            c[i,j] = s 
+
+    return c
+
+
+def mmmb(a, b, bs):
+    """Matrix-matrix multiplication with tiling
+
+    https://en.wikipedia.org/wiki/Loop_nest_optimization
+    https://en.wikipedia.org/wiki/Matrix_multiplication_algorithm
+
+    Parameters
+    ----------
+    a : 2D numpy array, float
+        pre-matrix to be multiplied
+    b : 2D numpy array, float
+        post-matrix to be multiplied
+    bs : integer, optional
+        block size for tiling
+
+    Returns
+    -------
+    c : 2D numpy array, float
+        resultant product matrix
+
+    """
+
+    #zero-based max index
+    m = a.shape[0] #rows
+    n = a.shape[1] #columns
+    v = b.shape[0] #rows
+    w = b.shape[1] #columns
+
+    if n != v:
+        raise ValueError("The matrix-matrix multiplication dimensions are incompatible.")
+
+    if bs <= 0:
+        raise ValueError("The block size must an integer greater than zero.")
+
+    c = np.zeros((m,w))
+
+    for i in range(0,n,bs):
+        for j in range(0,w,bs):
+            for k in range(0,m,bs):
+                for p in range(i,min(n, i+bs)):
+                    for q in range(j, min(w, j+bs)):
+                        s = 0
+                        for r in range(k, min(m,k+bs)):
+                            s = s + a[p,r]*b[r,q]
+                        c[p,q] = s 
+
+    return c
+
+#def mmmr(a, b):
+#    """Matrix-matrix multiplication with recursion
+#
+#    See "Divide and conquer algorithm"
+#    https://en.wikipedia.org/wiki/Matrix_multiplication_algorithm
+#
+#    Parameters
+#    ----------
+#    a : 2D numpy array, float
+#        pre-matrix to be multiplied
+#    b : 2D numpy array, float
+#        post-matrix to be multiplied
+#
+#    Returns
+#    -------
+#    c : 2D numpy array, float
+#        resultant product matrix
+#
+#    """
+#
+#    #zero-based max index
+#    m = a.shape[0]-1 #rows
+#    n = a.shape[1]-1 #columns
+#    v = b.shape[0]-1
+#    w = b.shape[1]-1
+
 
 
 
 #######################
-# DOOLITTLE REDUCTION
+# LU Factorization using Doolittle reduction
 #######################
 
 
