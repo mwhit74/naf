@@ -62,13 +62,15 @@ def mt(a):
     m = a.shape[0] #rows, zero-based max index
     n = a.shape[1] #columns, zero-based max index
 
+    at = np.empty((n,m))
+
     for i in range(0,m):
         for j in range(0,n):
             aij = a[i,j]
-            a[i,j] = a[j,i]
-            a[j,i] = aij
+            at[i,j] = a[j,i]
+            at[j,i] = aij
 
-    return a
+    return at
 
 def vvm(va, vb):
     """Vector-vector multiplication
