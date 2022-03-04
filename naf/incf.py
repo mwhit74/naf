@@ -43,7 +43,7 @@ def lagrangian_poly(pts, n, x):
 
     from functools import partial
     import numpy as np
-    from naf.incf import lag_poly
+    from naf.incf import lagrangian_poly
 
     pts = np.array([[-2.3,2.1],[0.5,-1.3],[3.1,4.2]])
     x = np.linspace(-10,10)
@@ -54,7 +54,7 @@ def lagrangian_poly(pts, n, x):
 
     Usage 2: generate single values
     
-    from naf.incf import lag_poly
+    from naf.incf import lagrangian_poly
     import numpy as np
 
     pts = np.array([[-2.3,2.1],[0.5,-1.3],[3.1,4.2]])
@@ -1002,8 +1002,8 @@ def bezier_curve(pts, n, np=101):
         np calculated points along Bezier curve, shape (np x 2)
     """
 
-    nr = pts.size[0]
-    nc = pts.size[1]
+    nr = pts.shape[0]
+    nc = pts.shape[1]
 
     if nc != 2:
         raise ValueError("More columns than expected. Shape should be n x 2.")
@@ -1044,4 +1044,86 @@ def bezier_curve(pts, n, np=101):
     return fp 
 
 
+#############################
+# Linear Least Squares
+#############################
 
+def least_squares_polynomial(pts, d):
+    """Coefficients for least sqaures polynomial of nth degree.
+
+    Naive algorithm to calculate coefficients for least squares
+    polynomial. Good for polynomials up to 5th degree. After 5th
+    degree the matrix used to solve for the coefficients with LU
+    decomposition becomes ill-conditioned and other less sensitive
+    algorithms should be used. 
+    
+    Parameters
+    ----------
+    pts: 2D numpy array, float
+        set of x,y points to fit with least sqaures polynomial
+    d: integer
+        degree of polynomial used to fit point
+
+    Returns
+    -------
+    pc : 1D numpy array, float
+        least squares polynoial coefficients in order [a0, a1, ... , an]
+
+    """
+    m = pts.shape[0]
+
+    if d > m-1:
+        raise ValueError("Polynomial degree must be less than the number of points minus 1")
+
+    x = pts[...,0]
+    y = pts[...,1]
+
+    nm = np.empty((d+1, d+1)) #normal matrix
+    
+    for i in range(0,d+1):
+        for j in range(0,d+1):
+            s = 0
+            for k in range(0,m):
+                s = s + x[k]**((i+1)+(j+1)-2)
+            nm[i][j] = s
+
+    b = np.empty(d+1)
+
+    for i in range(0,d+1):
+        s = 0
+        for k in range(0,m):
+            s = s + x[k]**((i+1)-1)*y[k]
+        b[i] = s
+
+    a = linalg.doqsv(nm, b)
+
+    return a
+
+def eval_poly(a, x):
+    """Evaluate polynoial equation for specific point
+
+    Uses nested polynomial algorithm for evaluation
+
+    Parameters
+    ----------
+    a : 1D numpy array
+        
+        array of polynomial coefficients [a0, a1, a2, a3, a4, a5]
+    x : float
+        x-value to be evaluated
+
+    Returns
+    -------
+    y : float
+        y-value calculated
+
+    """
+    n = a.shape[0]
+
+    y = 0
+    for i in range(n-1,0,-1):
+        y = (y + a[i])*x
+
+    y = y + a[0]
+
+    return y
