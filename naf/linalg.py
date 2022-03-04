@@ -487,6 +487,14 @@ def dobs(lu, ov, c):
     x : 1D numpy array
         the solution vector
     
+    Notes
+    -----
+    1. Solution vector, x, is NOT in original equation order. The solution 
+    vector includes the row swaps that can take place during solution. To
+    get back to the original equation order:
+
+    x = x[ov]
+
     """
     c = c.copy()
     m, n = lu.shape
@@ -529,12 +537,20 @@ def dosv(lu, ov, b):
     x : 1D numpy array
         solution vector
 
+    Notes
+    -----
+    1. Solution vector, x, is NOT in original equation order. The solution 
+    vector includes the row swaps that can take place during solution. To
+    get back to the original equation order:
+
+    x = x[ov]
+
     """
     b = b.copy()
     
     c = dofe(lu, ov, b)
     x = dobs(lu, ov, c)
-    return x 
+    return x
 
 def doqsv(a, b):
     """Quick solve using Doolittle reduction application. 
@@ -553,12 +569,16 @@ def doqsv(a, b):
     -------
     x : 1D numpy array
         solution vector
+
+    Notes
+    -----
+    1. The solution vector is in the order of the original equations.
     """
 
     lu, ov = gedo(a)
     x = dosv(lu, ov, b)
 
-    return x
+    return x[ov]
 
 def det(lu, ov):
     
