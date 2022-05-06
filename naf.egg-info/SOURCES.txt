@@ -1,6 +1,7 @@
 pyproject.toml
 setup.py
 naf/__init__.py
+naf/afaf.py
 naf/incf.py
 naf/linalg.py
 naf/linalg_exp.py
