@@ -677,6 +677,9 @@ def tddo(a):
     This function does the decomposition in place. That is to say it stores the
     resulting values in the a matrix. 
 
+    NOTE: 
+    THE INPUT MATRIX MUST BE A **FLOAT**
+
     Parameters
     ----------
     a : 2D numpy array
@@ -816,6 +819,22 @@ def tdqsv(a,b):
 
     This does not save the LU decomposition for reuse. It simply solves
     the system of equations and returns the solution vector.
+
+    NOTE: 
+    THE INPUT MATRIX AND VECTOR MUST BE **FLOATS**
+    dtype=float
+
+    Test Ax=b
+    A = np.array([[0,-4,2],
+              [1,-4,1],
+              [1,-4,1],
+              [1,-4,1],
+              [2,-4,0]],dtype=float)
+
+    b = np.array([0,-4,-11,5,6],dtype=float)
+
+    Solution
+    x = np.array([1.,2.,3,.-1.,-2.])
 
     Parameters
     ----------
